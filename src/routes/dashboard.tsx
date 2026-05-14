@@ -163,8 +163,8 @@ function DashboardPage() {
                   onDrop={onDrop}
                   onClick={() => inputRef.current?.click()}
                   className={cn(
-                    "group relative flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/50 ring-1 ring-transparent transition-all",
-                    "hover:border-primary/40 hover:ring-primary/20",
+                    "group relative flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/30 backdrop-blur-xl ring-1 ring-transparent transition-all",
+                    "hover:border-primary/40 hover:ring-primary/20 hover:bg-card/40",
                     dragOver && "border-primary/60 bg-primary/5 ring-primary/30",
                   )}
                 >
@@ -218,7 +218,7 @@ function DashboardPage() {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="What is this video about? e.g. Productivity hacks for remote engineers, the future of AI in creator tools…"
-                  className="min-h-[120px] w-full rounded-xl border border-border bg-card/50 p-4 text-sm placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-[120px] w-full rounded-xl border border-border bg-card/30 p-4 text-sm backdrop-blur-xl placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
@@ -243,7 +243,7 @@ function DashboardPage() {
                 )}
               </button>
 
-              <div className="rounded-xl border border-border bg-card/30 p-4">
+              <div className="rounded-xl border border-border bg-card/20 p-4 backdrop-blur-xl">
                 <div className="mb-2 flex items-center gap-2 text-xs font-medium">
                   <Zap className="size-3.5 text-primary" /> Pro tip
                 </div>
@@ -314,7 +314,7 @@ function ResultsGrid({ results }: { results: GeneratedAssets }) {
       {SECTIONS.map((s, i) => (
         <div
           key={s.key}
-          className="animate-fade-up rounded-2xl border border-border bg-card/60 p-5 transition-all hover:border-border/80"
+          className="animate-fade-up rounded-2xl border border-border bg-card/40 p-5 backdrop-blur-xl transition-all hover:border-primary/30 hover:bg-card/60"
           style={{ animationDelay: `${i * 80}ms` }}
         >
           <div className="mb-4 flex items-start justify-between">

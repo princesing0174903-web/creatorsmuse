@@ -1,37 +1,67 @@
 import { useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
-const KEY = "nexus.auth";
+export type AuthUser = { id: string; email: string; name: string };
 
-export type AuthUser = { email: string; name: string };
-
-export function getUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setUser(user: AuthUser | null) {
-  if (typeof window === "undefined") return;
-  if (user) localStorage.setItem(KEY, JSON.stringify(user));
-  else localStorage.removeItem(KEY);
-  window.dispatchEvent(new Event("nexus-auth"));
+function deriveName(session: Session | null): string {
+  if (!session?.user) return "";
+  const meta = (session.user.user_metadata ?? {}) as { display_name?: string };
+  return meta.display_name || session.user.email?.split("@")[0] || "Creator";
 }
 
 export function useAuth() {
-  const [user, set] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    set(getUser());
-    const h = () => set(getUser());
-    window.addEventListener("nexus-auth", h);
-    window.addEventListener("storage", h);
-    return () => {
-      window.removeEventListener("nexus-auth", h);
-      window.removeEventListener("storage", h);
-    };
+    // Subscribe FIRST, then read initial session.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? "",
+          name: deriveName(session),
+        });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+
+      // Optionally refresh display_name from profiles (deferred).
+      if (session?.user) {
+        setTimeout(async () => {
+          const { data } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          if (data?.display_name) {
+            setUser((prev) =>
+              prev ? { ...prev, name: data.display_name as string } : prev,
+            );
+          }
+        }, 0);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? "",
+          name: deriveName(session),
+        });
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
-  return user;
+
+  return { user, loading };
+}
+
+export async function signOut() {
+  await supabase.auth.signOut();
 }

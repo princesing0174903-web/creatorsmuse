@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const user = useAuth();
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

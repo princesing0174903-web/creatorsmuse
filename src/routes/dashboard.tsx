@@ -314,7 +314,7 @@ function ResultsGrid({ results }: { results: GeneratedAssets }) {
       {SECTIONS.map((s, i) => (
         <div
           key={s.key}
-          className="animate-fade-up rounded-2xl border border-border bg-card/60 p-5 transition-all hover:border-border/80"
+          className="animate-fade-up rounded-2xl border border-border bg-card/40 p-5 backdrop-blur-xl transition-all hover:border-primary/30 hover:bg-card/60"
           style={{ animationDelay: `${i * 80}ms` }}
         >
           <div className="mb-4 flex items-start justify-between">

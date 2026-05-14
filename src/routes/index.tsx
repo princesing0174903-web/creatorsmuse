@@ -65,7 +65,25 @@ function Landing() {
           style={{ animationDelay: "80ms" }}
         >
           Turn raw footage into{" "}
-          <span className="bg-gradient-primary bg-clip-text text-transparent">viral output.</span>
+          <span className="relative inline-block">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-[-8%] inset-y-[-10%] -z-10 rounded-[2rem] opacity-70 blur-2xl"
+              style={{
+                background:
+                  "radial-gradient(60% 70% at 50% 50%, oklch(0.82 0.14 200 / 18%), transparent 70%)",
+              }}
+            />
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(135deg, oklch(0.98 0.01 240) 0%, oklch(0.88 0.05 220) 45%, oklch(0.7 0.08 260) 100%)",
+              }}
+            >
+              viral output.
+            </span>
+          </span>
         </h1>
         <p
           className={`mx-auto mt-6 max-w-xl text-balance text-lg text-muted-foreground ${mounted ? "animate-fade-up" : "opacity-0"}`}

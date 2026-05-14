@@ -140,7 +140,7 @@ function DashboardPage() {
         <div className="mx-auto w-full max-w-6xl animate-fade-up space-y-8 p-8">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold tracking-tight">
-              Synthesize, <span className="bg-gradient-primary bg-clip-text text-transparent">in seconds.</span>
+              Synthesize, <span className="text-white">in seconds.</span>
             </h2>
             <p className="text-sm text-muted-foreground">
               Drop a clip, name your topic, and let the engine generate platform-ready assets.

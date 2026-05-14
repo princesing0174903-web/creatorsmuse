@@ -78,7 +78,7 @@ function Landing() {
               className="bg-clip-text text-transparent"
               style={{
                 backgroundImage:
-                  "linear-gradient(135deg, oklch(0.98 0.01 240) 0%, oklch(0.88 0.05 220) 45%, oklch(0.7 0.08 260) 100%)",
+                  "linear-gradient(135deg, oklch(1 0 0) 0%, oklch(0.98 0 0) 50%, oklch(0.95 0 0) 100%)",
               }}
             >
               viral output.

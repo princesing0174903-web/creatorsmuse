@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { setUser, getUser } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -22,17 +25,38 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (getUser()) navigate({ to: "/dashboard" });
-  }, [navigate]);
+    if (!authLoading && user) navigate({ to: "/dashboard" });
+  }, [authLoading, user, navigate]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    const displayName = name || email.split("@")[0];
-    setUser({ email, name: displayName });
-    navigate({ to: "/dashboard" });
+    try {
+      if (mode === "signup") {
+        const displayName = name || email.split("@")[0];
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { display_name: displayName },
+          },
+        });
+        if (error) throw error;
+        toast.success("Account created. Check your email to confirm, then sign in.");
+        setMode("signin");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate({ to: "/dashboard" });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Authentication failed";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,20 +134,6 @@ function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-widest text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <button
-            onClick={() => {
-              setUser({ email: "demo@nexus.ai", name: "Alex Rivers" });
-              navigate({ to: "/dashboard" });
-            }}
-            className="h-11 w-full rounded-lg border border-border bg-background/40 text-sm font-medium transition-colors hover:bg-secondary"
-          >
-            Continue with demo account
-          </button>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             {mode === "signin" ? "New here?" : "Already have an account?"}{" "}

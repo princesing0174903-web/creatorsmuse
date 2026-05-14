@@ -18,7 +18,7 @@ import {
   Zap,
   X,
 } from "lucide-react";
-import { useAuth, setUser } from "@/lib/auth";
+import { useAuth, signOut } from "@/lib/auth";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate";
 import { cn } from "@/lib/utils";
 
@@ -40,16 +40,14 @@ const NAV = [
 ];
 
 function DashboardPage() {
-  const user = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setHydrated(true);
-    if (typeof window !== "undefined" && !localStorage.getItem("nexus.auth")) {
+    if (!authLoading && !user) {
       navigate({ to: "/login" });
     }
-  }, [navigate]);
+  }, [authLoading, user, navigate]);
 
   const [topic, setTopic] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -74,12 +72,12 @@ function DashboardPage() {
     setLoading(false);
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    await signOut();
     navigate({ to: "/login" });
   };
 
-  if (!hydrated) return null;
+  if (authLoading || !user) return null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">

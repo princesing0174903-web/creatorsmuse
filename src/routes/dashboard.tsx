@@ -1,15 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+} from "react";
 import {
   Upload,
   Sparkles,
   Loader2,
-  Copy,
-  Check,
   Film,
-  Hash,
-  MessageSquare,
-  Clapperboard,
   Zap,
   X,
 } from "lucide-react";
@@ -19,6 +23,8 @@ import { useAuth } from "@/lib/auth";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/app-shell";
+
+const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -48,21 +54,24 @@ function DashboardPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const generateFn = useServerFn(generateAssets);
 
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+  const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
     const f = e.dataTransfer.files?.[0];
     if (f) setFile(f);
-  };
+  }, []);
 
-  const generate = async () => {
-    if (!topic.trim() && !file) return;
+  const trimmedTopic = useMemo(() => topic.trim(), [topic]);
+  const canGenerate = !!trimmedTopic || !!file;
+
+  const generate = useCallback(async () => {
+    if (!canGenerate) return;
     setLoading(true);
     setResults(null);
     try {
       const r = await generateFn({
         data: {
-          topic: topic.trim() || (file ? `Video clip: ${file.name}` : ""),
+          topic: trimmedTopic || (file ? `Video clip: ${file.name}` : ""),
           fileName: file?.name,
         },
       });
@@ -73,13 +82,13 @@ function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [canGenerate, generateFn, trimmedTopic, file]);
 
   if (authLoading || !user) return null;
 
   return (
     <AppShell>
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/70 px-8 backdrop-blur">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-8">
           <h1 className="ml-12 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground md:ml-0">
             Workbench / New Production
           </h1>
@@ -115,8 +124,8 @@ function DashboardPage() {
                   onDrop={onDrop}
                   onClick={() => inputRef.current?.click()}
                   className={cn(
-                    "group relative flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/30 backdrop-blur-xl ring-1 ring-transparent transition-all",
-                    "hover:border-primary/40 hover:ring-primary/20 hover:bg-card/40",
+                    "group relative flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/40 ring-1 ring-transparent transition-colors",
+                    "hover:border-primary/40 hover:ring-primary/20 hover:bg-card/60",
                     dragOver && "border-primary/60 bg-primary/5 ring-primary/30",
                   )}
                 >
@@ -170,18 +179,18 @@ function DashboardPage() {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="What is this video about? e.g. Productivity hacks for remote engineers, the future of AI in creator tools…"
-                  className="min-h-[120px] w-full rounded-xl border border-border bg-card/30 p-4 text-sm backdrop-blur-xl placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-[120px] w-full rounded-xl border border-border bg-card/40 p-4 text-sm placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               <button
                 onClick={generate}
-                disabled={loading || (!topic.trim() && !file)}
+                disabled={loading || !canGenerate}
                 className={cn(
-                  "flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold uppercase tracking-wider text-primary-foreground transition-all",
+                  "flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold uppercase tracking-wider text-primary-foreground transition-transform",
                   "shadow-glow hover:scale-[1.01] active:scale-[0.99]",
                   "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100",
-                  !loading && !(!topic.trim() && !file) && "animate-pulse-glow",
+                  !loading && canGenerate && "animate-pulse-glow",
                 )}
               >
                 {loading ? (
@@ -195,7 +204,7 @@ function DashboardPage() {
                 )}
               </button>
 
-              <div className="rounded-xl border border-border bg-card/20 p-4 backdrop-blur-xl">
+              <div className="rounded-xl border border-border bg-card/30 p-4">
                 <div className="mb-2 flex items-center gap-2 text-xs font-medium">
                   <Zap className="size-3.5 text-primary" /> Pro tip
                 </div>
@@ -209,7 +218,11 @@ function DashboardPage() {
             <div className="col-span-12 lg:col-span-7">
               {!results && !loading && <EmptyState />}
               {loading && <LoadingState />}
-              {results && <ResultsGrid results={results} />}
+              {results && (
+                <Suspense fallback={<LoadingState />}>
+                  <ResultsGrid results={results} />
+                </Suspense>
+              )}
             </div>
           </div>
         </div>
@@ -249,69 +262,5 @@ function LoadingState() {
         </div>
       ))}
     </div>
-  );
-}
-
-const SECTIONS = [
-  { key: "hooks" as const, label: "Viral Hooks", icon: Zap, accent: true },
-  { key: "captions" as const, label: "AI Captions", icon: Hash },
-  { key: "posts" as const, label: "Tweet / Post Ideas", icon: MessageSquare },
-  { key: "shorts" as const, label: "Shorts Angles", icon: Clapperboard },
-];
-
-function ResultsGrid({ results }: { results: GeneratedAssets }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {SECTIONS.map((s, i) => (
-        <div
-          key={s.key}
-          className="animate-fade-up rounded-2xl border border-border bg-card/40 p-5 backdrop-blur-xl transition-all hover:border-primary/30 hover:bg-card/60"
-          style={{ animationDelay: `${i * 80}ms` }}
-        >
-          <div className="mb-4 flex items-start justify-between">
-            <h3
-              className={cn(
-                "flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em]",
-                s.accent ? "text-primary" : "text-muted-foreground",
-              )}
-            >
-              <s.icon className="size-3" /> {s.label}
-            </h3>
-            <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-              {results[s.key].length.toString().padStart(2, "0")} options
-            </span>
-          </div>
-          <div className="space-y-2.5">
-            {results[s.key].map((text, j) => (
-              <ResultLine key={j} text={text} highlight={s.accent && j === 0} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ResultLine({ text, highlight }: { text: string; highlight?: boolean }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
-  };
-  return (
-    <button
-      onClick={copy}
-      className={cn(
-        "group flex w-full items-start justify-between gap-3 rounded-lg border-l-2 bg-background/50 p-3 text-left text-xs leading-relaxed transition-all",
-        highlight ? "border-primary/60" : "border-transparent hover:border-border",
-        "hover:bg-background",
-      )}
-    >
-      <span className={cn(highlight ? "text-foreground" : "text-muted-foreground")}>{text}</span>
-      <span className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-        {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
-      </span>
-    </button>
   );
 }

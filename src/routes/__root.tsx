@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Nexus — AI content engine for creators" },
-      { name: "description", content: "Synthesize raw video into viral hooks, captions, tweets, and shorts ideas — instantly." },
+      { title: "Creator’s Muse — AI Growth Engine for Creators" },
+      { name: "description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
       { name: "author", content: "Nexus" },
-      { property: "og:title", content: "Nexus — AI content engine for creators" },
-      { property: "og:description", content: "Synthesize raw video into viral hooks, captions, tweets, and shorts ideas — instantly." },
+      { property: "og:title", content: "Creator’s Muse — AI Growth Engine for Creators" },
+      { property: "og:description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Creator’s Muse — AI Growth Engine for Creators" },
+      { name: "twitter:description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8cmy4amAScYmGbvCGPVEFY0DWrR2/social-images/social-1778841829896-Creater,s_Muse_image.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8cmy4amAScYmGbvCGPVEFY0DWrR2/social-images/social-1778841829896-Creater,s_Muse_image.webp" },
     ],
     links: [
       {

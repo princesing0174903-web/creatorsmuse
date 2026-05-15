@@ -1,16 +1,11 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
-  LayoutDashboard,
-  FolderOpen,
-  Library,
-  Settings,
   Upload,
   Sparkles,
   Loader2,
   Copy,
   Check,
-  LogOut,
   Film,
   Hash,
   MessageSquare,
@@ -20,9 +15,10 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { useAuth, signOut } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/app-shell";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -33,13 +29,6 @@ export const Route = createFileRoute("/dashboard")({
     ],
   }),
 });
-
-const NAV = [
-  { label: "Dashboard", icon: LayoutDashboard, active: true },
-  { label: "Projects", icon: FolderOpen },
-  { label: "Library", icon: Library },
-  { label: "Settings", icon: Settings },
-];
 
 function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -86,63 +75,12 @@ function DashboardPage() {
     }
   };
 
-  const logout = async () => {
-    await signOut();
-    navigate({ to: "/login" });
-  };
-
   if (authLoading || !user) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      {/* Sidebar */}
-      <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-sidebar/60 backdrop-blur-md">
-        <Link to="/" className="flex items-center gap-3 p-6">
-          <div className="size-6 rounded bg-primary shadow-glow" />
-          <span className="text-lg font-bold uppercase tracking-tighter">Nexus</span>
-        </Link>
-
-        <nav className="flex-1 space-y-1 px-4">
-          {NAV.map((n) => (
-            <button
-              key={n.label}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                n.active
-                  ? "bg-secondary text-primary"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-              )}
-            >
-              <n.icon className="size-4" />
-              <span className="font-medium">{n.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3 rounded-lg bg-background/40 p-2.5">
-            <div className="flex size-9 items-center justify-center rounded-full bg-gradient-primary text-xs font-bold text-primary-foreground">
-              {(user?.name ?? "U").slice(0, 1).toUpperCase()}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="truncate text-xs font-medium">{user?.name ?? "Creator"}</p>
-              <p className="truncate text-[10px] text-muted-foreground">{user?.email ?? "—"}</p>
-            </div>
-            <button
-              onClick={logout}
-              title="Sign out"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <LogOut className="size-3.5" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="flex flex-1 flex-col overflow-y-auto bg-gradient-radial">
+    <AppShell>
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/70 px-8 backdrop-blur">
-          <h1 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <h1 className="ml-12 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground md:ml-0">
             Workbench / New Production
           </h1>
           <div className="flex h-8 items-center gap-2 rounded-md border border-border bg-secondary/40 px-3 font-mono text-[10px] font-medium uppercase tracking-widest">
@@ -275,8 +213,7 @@ function DashboardPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }
 

@@ -18,8 +18,10 @@ import {
   Zap,
   X,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { useAuth, signOut } from "@/lib/auth";
-import { generateAssets, type GeneratedAssets } from "@/lib/generate";
+import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
@@ -55,6 +57,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GeneratedAssets | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const generateFn = useServerFn(generateAssets);
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -67,9 +70,20 @@ function DashboardPage() {
     if (!topic.trim() && !file) return;
     setLoading(true);
     setResults(null);
-    const r = await generateAssets(topic);
-    setResults(r);
-    setLoading(false);
+    try {
+      const r = await generateFn({
+        data: {
+          topic: topic.trim() || (file ? `Video clip: ${file.name}` : ""),
+          fileName: file?.name,
+        },
+      });
+      setResults(r);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Generation failed";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = async () => {

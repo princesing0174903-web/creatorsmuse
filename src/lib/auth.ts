@@ -10,53 +10,76 @@ function deriveName(session: Session | null): string {
   return meta.display_name || session.user.email?.split("@")[0] || "Creator";
 }
 
+// Module-level cache so route transitions don't re-show a loading flash.
+let cachedUser: AuthUser | null = null;
+let cachedLoading = true;
+let bootstrapped = false;
+const listeners = new Set<(u: AuthUser | null, l: boolean) => void>();
+
+function emit() {
+  for (const cb of listeners) cb(cachedUser, cachedLoading);
+}
+
+function setFromSession(session: Session | null) {
+  cachedUser = session?.user
+    ? {
+        id: session.user.id,
+        email: session.user.email ?? "",
+        name: deriveName(session),
+      }
+    : null;
+  cachedLoading = false;
+  emit();
+}
+
+function bootstrap() {
+  if (bootstrapped) return;
+  bootstrapped = true;
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    setFromSession(session);
+
+    if (session?.user) {
+      // Deferred profile enrichment — never blocks the UI.
+      setTimeout(async () => {
+        const uid = session.user.id;
+        const { data } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (data?.display_name && cachedUser && cachedUser.id === uid) {
+          cachedUser = { ...cachedUser, name: data.display_name as string };
+          emit();
+        }
+      }, 0);
+    }
+  });
+
+  // Kick off initial session resolution. onAuthStateChange also fires
+  // INITIAL_SESSION, but calling getSession primes the cache faster on cold loads.
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setFromSession(session);
+  });
+}
+
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  bootstrap();
+  const [user, setUser] = useState<AuthUser | null>(cachedUser);
+  const [loading, setLoading] = useState<boolean>(cachedLoading);
 
   useEffect(() => {
-    // Subscribe FIRST, then read initial session.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? "",
-          name: deriveName(session),
-        });
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-
-      // Optionally refresh display_name from profiles (deferred).
-      if (session?.user) {
-        setTimeout(async () => {
-          const { data } = await supabase
-            .from("profiles")
-            .select("display_name")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-          if (data?.display_name) {
-            setUser((prev) =>
-              prev ? { ...prev, name: data.display_name as string } : prev,
-            );
-          }
-        }, 0);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? "",
-          name: deriveName(session),
-        });
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Sync immediately in case cache changed between render and effect.
+    setUser(cachedUser);
+    setLoading(cachedLoading);
+    const cb = (u: AuthUser | null, l: boolean) => {
+      setUser(u);
+      setLoading(l);
+    };
+    listeners.add(cb);
+    return () => {
+      listeners.delete(cb);
+    };
   }, []);
 
   return { user, loading };

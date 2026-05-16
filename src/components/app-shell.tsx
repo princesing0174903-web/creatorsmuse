@@ -138,7 +138,7 @@ export function PlaceholderPage({
         </h1>
       </header>
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center p-8 text-center">
-        <div className="mb-6 flex size-16 items-center justify-center rounded-2xl border border-border bg-card/40 backdrop-blur-xl ring-1 ring-primary/10 animate-float">
+        <div className="mb-6 flex size-16 items-center justify-center rounded-2xl border border-border bg-card/40 ring-1 ring-primary/10">
           <Icon className="size-7 text-primary" />
         </div>
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>

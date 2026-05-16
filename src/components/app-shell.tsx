@@ -29,7 +29,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!loading && !user) navigate({ to: "/login" });
   }, [loading, user, navigate]);
 
-  if (loading || !user) return null;
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="size-6 animate-pulse rounded bg-primary/70 shadow-glow" />
+      </div>
+    );
+  }
+  if (!user) return null;
 
   const logout = async () => {
     await signOut();

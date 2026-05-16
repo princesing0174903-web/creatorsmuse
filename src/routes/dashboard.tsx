@@ -1,9 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Suspense,
   lazy,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/auth";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/app-shell";
@@ -37,15 +35,6 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate({ to: "/login" });
-    }
-  }, [authLoading, user, navigate]);
-
   const [topic, setTopic] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -83,8 +72,6 @@ function DashboardPage() {
       setLoading(false);
     }
   }, [canGenerate, generateFn, trimmedTopic, file]);
-
-  if (authLoading || !user) return null;
 
   return (
     <AppShell>
@@ -190,7 +177,6 @@ function DashboardPage() {
                   "flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold uppercase tracking-wider text-primary-foreground transition-transform",
                   "shadow-glow hover:scale-[1.01] active:scale-[0.99]",
                   "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100",
-                  !loading && canGenerate && "animate-pulse-glow",
                 )}
               >
                 {loading ? (

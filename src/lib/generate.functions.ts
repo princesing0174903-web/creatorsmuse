@@ -6,13 +6,21 @@ const InputSchema = z.object({
   fileName: z.string().trim().max(300).optional(),
 });
 
-const OutputSchema = z.object({
-  hooks: z.array(z.string()).length(5),
-  captions: z.array(z.string()).length(5),
-  posts: z.array(z.string()).length(5),
-  shorts: z.array(z.string()).length(5),
+const ScoredItem = z.object({
+  text: z.string().min(1),
+  virality: z.number().min(0).max(100),
+  engagement: z.number().min(0).max(100),
+  emotion: z.number().min(0).max(100),
 });
 
+const OutputSchema = z.object({
+  hooks: z.array(ScoredItem).length(5),
+  captions: z.array(ScoredItem).length(5),
+  posts: z.array(ScoredItem).length(5),
+  shorts: z.array(ScoredItem).length(5),
+});
+
+export type ScoredAsset = z.infer<typeof ScoredItem>;
 export type GeneratedAssets = z.infer<typeof OutputSchema>;
 
 const SYSTEM_PROMPT = `You are a senior short-form content strategist for top creators (YouTube Shorts, TikTok, Reels, X/Twitter).
@@ -27,6 +35,12 @@ Hard rules:
 - Captions: 1–2 sentences ready to paste under a Reel/Short. Hook + payoff or CTA.
 - Posts: 1 standalone tweet OR a thread starter (mark threads with "🧵" prefix). Mix formats.
 - Shorts: a one-line VISUAL/structural angle (b-roll, hook frame, edit style, on-screen text idea) — not just a topic restatement.
+
+Scoring (per item, integers 0-100, be discriminating — do NOT cluster everything 80-95):
+- virality: predicted ceiling reach / share-ability based on hook strength, novelty, controversy, pattern interrupt.
+- engagement: predicted comments + saves + watch-through, based on specificity, debate potential, CTA strength.
+- emotion: emotional intensity (curiosity, anger, awe, FOMO, joy). Calm/informational = low. Visceral = high.
+Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, one 48 is more useful than five 90s.
 `;
 
 export const generateAssets = createServerFn({ method: "POST" })
@@ -57,17 +71,26 @@ export const generateAssets = createServerFn({ method: "POST" })
             function: {
               name: "emit_assets",
               description: "Return the 4 categories of creator assets.",
-              parameters: {
-                type: "object",
-                properties: {
-                  hooks: { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
-                  captions: { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
-                  posts: { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
-                  shorts: { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
-                },
-                required: ["hooks", "captions", "posts", "shorts"],
-                additionalProperties: false,
-              },
+              parameters: (() => {
+                const item = {
+                  type: "object",
+                  properties: {
+                    text: { type: "string" },
+                    virality: { type: "integer", minimum: 0, maximum: 100 },
+                    engagement: { type: "integer", minimum: 0, maximum: 100 },
+                    emotion: { type: "integer", minimum: 0, maximum: 100 },
+                  },
+                  required: ["text", "virality", "engagement", "emotion"],
+                  additionalProperties: false,
+                };
+                const arr = { type: "array", items: item, minItems: 5, maxItems: 5 };
+                return {
+                  type: "object",
+                  properties: { hooks: arr, captions: arr, posts: arr, shorts: arr },
+                  required: ["hooks", "captions", "posts", "shorts"],
+                  additionalProperties: false,
+                };
+              })(),
             },
           },
         ],

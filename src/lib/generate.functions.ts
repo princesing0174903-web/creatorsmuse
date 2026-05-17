@@ -11,6 +11,7 @@ const ScoredItem = z.object({
   virality: z.number().min(0).max(100),
   engagement: z.number().min(0).max(100),
   emotion: z.number().min(0).max(100),
+  hookStrength: z.number().min(0).max(100),
 });
 
 const OutputSchema = z.object({
@@ -40,6 +41,7 @@ Scoring (per item, integers 0-100, be discriminating — do NOT cluster everythi
 - virality: predicted ceiling reach / share-ability based on hook strength, novelty, controversy, pattern interrupt.
 - engagement: predicted comments + saves + watch-through, based on specificity, debate potential, CTA strength.
 - emotion: emotional intensity (curiosity, anger, awe, FOMO, joy). Calm/informational = low. Visceral = high.
+- hookStrength: how hard the FIRST 5 words pull attention. Pattern interrupt, specificity, stakes. Generic openers = low.
 Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, one 48 is more useful than five 90s.
 `;
 
@@ -79,8 +81,9 @@ export const generateAssets = createServerFn({ method: "POST" })
                     virality: { type: "integer", minimum: 0, maximum: 100 },
                     engagement: { type: "integer", minimum: 0, maximum: 100 },
                     emotion: { type: "integer", minimum: 0, maximum: 100 },
+                    hookStrength: { type: "integer", minimum: 0, maximum: 100 },
                   },
-                  required: ["text", "virality", "engagement", "emotion"],
+                  required: ["text", "virality", "engagement", "emotion", "hookStrength"],
                   additionalProperties: false,
                 };
                 const arr = { type: "array", items: item, minItems: 5, maxItems: 5 };

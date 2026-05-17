@@ -8,12 +8,16 @@ import {
   LogOut,
   Menu,
   X,
+  Clapperboard,
+  Workflow,
 } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" as const },
+  { label: "Reel Generator", icon: Clapperboard, to: "/reels" as const },
+  { label: "Workflow", icon: Workflow, to: "/workflow" as const },
   { label: "Projects", icon: FolderOpen, to: "/projects" as const },
   { label: "Library", icon: Library, to: "/library" as const },
   { label: "Settings", icon: Settings, to: "/settings" as const },

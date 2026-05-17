@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from "react";
-import { Check, Copy, Hash, MessageSquare, Clapperboard, Zap, Flame, TrendingUp, Heart } from "lucide-react";
+import { Check, Copy, Hash, MessageSquare, Clapperboard, Zap, Flame, TrendingUp, Heart, Crosshair } from "lucide-react";
 import type { GeneratedAssets, ScoredAsset } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 
@@ -165,6 +165,7 @@ const ResultLine = memo(function ResultLine({
         <ScoreBar icon={Flame} label="Viral" value={item.virality} delay={delay} />
         <ScoreBar icon={TrendingUp} label="Engage" value={item.engagement} delay={delay + 80} />
         <ScoreBar icon={Heart} label="Emotion" value={item.emotion} delay={delay + 160} />
+        <ScoreBar icon={Crosshair} label="Hook" value={item.hookStrength} delay={delay + 240} />
       </div>
 
       {/* tier label */}

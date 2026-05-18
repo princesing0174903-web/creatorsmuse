@@ -15,12 +15,16 @@ import {
   Film,
   Zap,
   X,
+  AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/app-shell";
+import { usePlan, incrementUsage } from "@/lib/plan";
+import { UpgradeModal } from "@/components/upgrade-modal";
 
 const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
 
@@ -40,8 +44,11 @@ function DashboardPage() {
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GeneratedAssets | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const generateFn = useServerFn(generateAssets);
+  const { plan, remaining } = usePlan();
 
   const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -55,8 +62,13 @@ function DashboardPage() {
 
   const generate = useCallback(async () => {
     if (!canGenerate) return;
+    if (remaining <= 0) {
+      setUpgradeOpen(true);
+      return;
+    }
     setLoading(true);
     setResults(null);
+    setError(null);
     try {
       const r = await generateFn({
         data: {
@@ -65,13 +77,15 @@ function DashboardPage() {
         },
       });
       setResults(r);
+      incrementUsage(1);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generation failed";
+      setError(msg);
       toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [canGenerate, generateFn, trimmedTopic, file]);
+  }, [canGenerate, generateFn, trimmedTopic, file, remaining]);
 
   return (
     <AppShell>
@@ -202,8 +216,9 @@ function DashboardPage() {
 
             {/* Results column */}
             <div className="col-span-12 lg:col-span-7">
-              {!results && !loading && <EmptyState />}
+              {!results && !loading && !error && <EmptyState />}
               {loading && <LoadingState />}
+              {error && !loading && <ErrorState message={error} onRetry={generate} />}
               {results && (
                 <Suspense fallback={<LoadingState />}>
                   <ResultsGrid results={results} />
@@ -212,7 +227,30 @@ function DashboardPage() {
             </div>
           </div>
         </div>
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        reason={`You've used all ${plan.monthlyCredits} generations on the ${plan.name} plan this month.`}
+      />
     </AppShell>
+  );
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex h-full min-h-[480px] flex-col items-center justify-center rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+      <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-destructive/10 ring-1 ring-destructive/30">
+        <AlertTriangle className="size-6 text-destructive" />
+      </div>
+      <p className="text-sm font-medium text-foreground">Synthesis failed</p>
+      <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+      <button
+        onClick={onRetry}
+        className="mt-5 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/20"
+      >
+        <RotateCcw className="size-3.5" /> Retry
+      </button>
+    </div>
   );
 }
 

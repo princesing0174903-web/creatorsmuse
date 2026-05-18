@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   Upload, Film, X, Sparkles, Loader2, Scissors, Brain, Wand2, Gauge,
-  Flame, TrendingUp, Heart, Crosshair, Copy, Check, Play,
+  Flame, TrendingUp, Heart, Crosshair, Copy, Check, Play, Radio, Eye,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
@@ -355,6 +355,8 @@ function ReelCard({ reel, index }: { reel: GeneratedReel; index: number }) {
         <ScoreRow icon={TrendingUp} label="Engage" value={reel.engagement} />
         <ScoreRow icon={Heart} label="Emotion" value={reel.emotion} />
         <ScoreRow icon={Crosshair} label="Hook" value={reel.hookStrength} />
+        <ScoreRow icon={Radio} label="Trend" value={reel.trendAlignment} />
+        <ScoreRow icon={Eye} label="Retain" value={reel.audienceRetention} />
       </div>
 
       <button

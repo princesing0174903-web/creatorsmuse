@@ -13,6 +13,8 @@ const ScoredItem = z.object({
   engagement: z.number().min(0).max(100),
   emotion: z.number().min(0).max(100),
   hookStrength: z.number().min(0).max(100),
+  trendAlignment: z.number().min(0).max(100),
+  audienceRetention: z.number().min(0).max(100),
 });
 
 const OutputSchema = z.object({
@@ -43,6 +45,8 @@ Scoring (per item, integers 0-100, be discriminating — do NOT cluster everythi
 - engagement: predicted comments + saves + watch-through, based on specificity, debate potential, CTA strength.
 - emotion: emotional intensity (curiosity, anger, awe, FOMO, joy). Calm/informational = low. Visceral = high.
 - hookStrength: how hard the FIRST 5 words pull attention. Pattern interrupt, specificity, stakes. Generic openers = low.
+- trendAlignment: how well the angle rides current platform/cultural trends right now (formats, sounds, debates). Evergreen but flat = low. On-the-nose timely = high.
+- audienceRetention: predicted % of viewers who stay through. Strong payoff loop, escalating tension, tight pacing = high. Front-loaded with no payoff = low.
 Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, one 48 is more useful than five 90s.
 `;
 
@@ -84,8 +88,13 @@ export const generateAssets = createServerFn({ method: "POST" })
                     engagement: { type: "integer", minimum: 0, maximum: 100 },
                     emotion: { type: "integer", minimum: 0, maximum: 100 },
                     hookStrength: { type: "integer", minimum: 0, maximum: 100 },
+                    trendAlignment: { type: "integer", minimum: 0, maximum: 100 },
+                    audienceRetention: { type: "integer", minimum: 0, maximum: 100 },
                   },
-                  required: ["text", "virality", "engagement", "emotion", "hookStrength"],
+                  required: [
+                    "text", "virality", "engagement", "emotion",
+                    "hookStrength", "trendAlignment", "audienceRetention",
+                  ],
                   additionalProperties: false,
                 };
                 const arr = { type: "array", items: item, minItems: 5, maxItems: 5 };

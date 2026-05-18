@@ -36,7 +36,16 @@ function bootstrap() {
   if (bootstrapped) return;
   bootstrapped = true;
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    // Clear any stale local session if Supabase tells us we're signed out
+    // or the refresh token was invalidated. Prevents the "Invalid Refresh
+    // Token: Refresh Token Not Found" loop on cold loads.
+    if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" && !session) {
+      cachedUser = null;
+      cachedLoading = false;
+      emit();
+      return;
+    }
     setFromSession(session);
 
     if (session?.user) {
@@ -58,9 +67,22 @@ function bootstrap() {
 
   // Kick off initial session resolution. onAuthStateChange also fires
   // INITIAL_SESSION, but calling getSession primes the cache faster on cold loads.
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setFromSession(session);
-  });
+  supabase.auth
+    .getSession()
+    .then(({ data: { session }, error }) => {
+      if (error) {
+        // Token refresh failed (e.g. "Refresh Token Not Found").
+        // Wipe the local session and stop the retry loop.
+        void supabase.auth.signOut({ scope: "local" }).catch(() => {});
+        setFromSession(null);
+        return;
+      }
+      setFromSession(session);
+    })
+    .catch(() => {
+      void supabase.auth.signOut({ scope: "local" }).catch(() => {});
+      setFromSession(null);
+    });
 }
 
 export function useAuth() {

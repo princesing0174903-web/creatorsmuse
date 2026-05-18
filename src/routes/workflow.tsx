@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Lightbulb, FileText, Clapperboard, Send, Plus, ArrowRight, Sparkles, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
@@ -32,10 +32,39 @@ const SEED: Card[] = [
   { id: "c5", stage: "post",   title: "Thread: 5 mistakes I made monetizing too early" },
 ];
 
+const STORAGE_KEY = "nexus.workflow.cards.v1";
+
+function loadCards(): Card[] {
+  if (typeof window === "undefined") return SEED;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return SEED;
+    const parsed = JSON.parse(raw) as Card[];
+    if (!Array.isArray(parsed)) return SEED;
+    return parsed;
+  } catch {
+    return SEED;
+  }
+}
+
 function WorkflowPage() {
   const [cards, setCards] = useState<Card[]>(SEED);
   const [drafting, setDrafting] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+
+  // Hydrate from localStorage after mount to avoid SSR mismatch.
+  useEffect(() => {
+    setCards(loadCards());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+    } catch {
+      // ignore quota errors
+    }
+  }, [cards]);
 
   const byStage = useMemo(() => {
     const map: Record<Stage, Card[]> = { idea: [], script: [], reel: [], post: [] };

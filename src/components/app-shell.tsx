@@ -10,8 +10,10 @@ import {
   X,
   Clapperboard,
   Workflow,
+  Sparkles,
 } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
+import { usePlan } from "@/lib/plan";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -20,11 +22,13 @@ const NAV = [
   { label: "Workflow", icon: Workflow, to: "/workflow" as const },
   { label: "Projects", icon: FolderOpen, to: "/projects" as const },
   { label: "Library", icon: Library, to: "/library" as const },
+  { label: "Pricing", icon: Sparkles, to: "/pricing" as const },
   { label: "Settings", icon: Settings, to: "/settings" as const },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { plan, used, percent } = usePlan();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -99,6 +103,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-border p-4">
+          <Link
+            to="/pricing"
+            className="mb-3 block rounded-lg border border-border bg-background/40 p-3 transition-colors hover:border-primary/30"
+          >
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                {plan.name} plan
+              </span>
+              <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
+                {used}/{plan.monthlyCredits}
+              </span>
+            </div>
+            <div className="h-1 overflow-hidden rounded-full bg-muted/40">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-[width] duration-500"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            {plan.id === "free" && (
+              <p className="mt-1.5 font-mono text-[9px] uppercase tracking-widest text-primary">
+                Upgrade →
+              </p>
+            )}
+          </Link>
           <div className="flex items-center gap-3 rounded-lg bg-background/40 p-2.5">
             <div className="flex size-9 items-center justify-center rounded-full bg-gradient-primary text-xs font-bold text-primary-foreground">
               {(user?.name ?? "U").slice(0, 1).toUpperCase()}

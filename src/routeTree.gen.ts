@@ -13,6 +13,7 @@ import { Route as WorkflowRouteImport } from './routes/workflow'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -36,6 +37,11 @@ const ReelsRoute = ReelsRouteImport.update({
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/reels': typeof ReelsRoute
   '/settings': typeof SettingsRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/reels': typeof ReelsRoute
   '/settings': typeof SettingsRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/projects': typeof ProjectsRoute
   '/reels': typeof ReelsRoute
   '/settings': typeof SettingsRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/library'
     | '/login'
+    | '/pricing'
     | '/projects'
     | '/reels'
     | '/settings'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/library'
     | '/login'
+    | '/pricing'
     | '/projects'
     | '/reels'
     | '/settings'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/library'
     | '/login'
+    | '/pricing'
     | '/projects'
     | '/reels'
     | '/settings'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
+  PricingRoute: typeof PricingRoute
   ProjectsRoute: typeof ProjectsRoute
   ReelsRoute: typeof ReelsRoute
   SettingsRoute: typeof SettingsRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
+  PricingRoute: PricingRoute,
   ProjectsRoute: ProjectsRoute,
   ReelsRoute: ReelsRoute,
   SettingsRoute: SettingsRoute,
@@ -208,3 +229,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

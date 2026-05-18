@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const InputSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
@@ -40,6 +41,7 @@ Rules:
 `;
 
 export const generateReels = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<GeneratedReels> => {
     const apiKey = process.env.LOVABLE_API_KEY;

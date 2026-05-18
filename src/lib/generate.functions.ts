@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const InputSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
@@ -46,6 +47,7 @@ Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, on
 `;
 
 export const generateAssets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<GeneratedAssets> => {
     const apiKey = process.env.LOVABLE_API_KEY;

@@ -19,6 +19,8 @@ const ReelSchema = z.object({
   engagement: z.number().min(0).max(100),
   emotion: z.number().min(0).max(100),
   hookStrength: z.number().min(0).max(100),
+  trendAlignment: z.number().min(0).max(100),
+  audienceRetention: z.number().min(0).max(100),
 });
 
 const OutputSchema = z.object({
@@ -37,7 +39,7 @@ Rules:
 - Each reel needs: a punchy title (max 60 chars), a strong opening hook line (spoken in first 1.5s), a ready-to-paste caption, and a one-sentence "reason" explaining WHY this moment is reel-worthy (story beat, emotional spike, contrarian take, payoff, etc.).
 - Distinct angles per reel — no repetition.
 - Score each reel (integers 0-100, spread realistically — avoid clustering 80-95):
-  - virality, engagement, emotion, hookStrength (how hard the first 5 words pull attention).
+  - virality, engagement, emotion, hookStrength (first 5 words pull), trendAlignment (rides current trends), audienceRetention (predicted % watch-through).
 `;
 
 export const generateReels = createServerFn({ method: "POST" })
@@ -87,10 +89,13 @@ export const generateReels = createServerFn({ method: "POST" })
                         engagement: { type: "integer", minimum: 0, maximum: 100 },
                         emotion: { type: "integer", minimum: 0, maximum: 100 },
                         hookStrength: { type: "integer", minimum: 0, maximum: 100 },
+                        trendAlignment: { type: "integer", minimum: 0, maximum: 100 },
+                        audienceRetention: { type: "integer", minimum: 0, maximum: 100 },
                       },
                       required: [
                         "title", "startSec", "endSec", "hook", "caption", "reason",
                         "virality", "engagement", "emotion", "hookStrength",
+                        "trendAlignment", "audienceRetention",
                       ],
                       additionalProperties: false,
                     },

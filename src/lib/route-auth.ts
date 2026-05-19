@@ -11,17 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
  * `requireSupabaseAuth` independently, so this guard is a UX layer, not a
  * security boundary.
  */
-export async function requireAuthBeforeLoad({
-  location,
-}: {
-  location: { href: string };
-}) {
+export async function requireAuthBeforeLoad(_args?: unknown) {
   if (typeof window === "undefined") return;
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
-    throw redirect({
-      to: "/login",
-      search: { redirect: location.href },
-    });
+    throw redirect({ to: "/login" });
   }
 }

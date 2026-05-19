@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { FolderOpen } from "lucide-react";
 import { PlaceholderPage } from "@/components/app-shell";
 
 export const Route = createFileRoute("/projects")({
+  beforeLoad: requireAuthBeforeLoad,
   component: ProjectsPage,
   head: () => ({
     meta: [

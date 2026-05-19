@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getMyPlanUsage, setMyPlan } from "./plan.functions";
 
 export type PlanId = "free" | "pro" | "creator";
 
@@ -6,7 +8,7 @@ export type Plan = {
   id: PlanId;
   name: string;
   monthlyPrice: number;
-  yearlyPrice: number; // per month, billed yearly
+  yearlyPrice: number;
   monthlyCredits: number;
   features: string[];
   highlight?: boolean;
@@ -58,84 +60,94 @@ export const PLANS: Plan[] = [
   },
 ];
 
-const STORAGE_KEY = "nexus.plan.v1";
-const USAGE_KEY = "nexus.plan.usage.v1";
+type Snapshot = { plan: PlanId; used: number; limit: number };
 
-type Stored = { plan: PlanId };
-type Usage = { month: string; used: number };
-
-function currentMonth() {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}`;
-}
-
-function readPlan(): PlanId {
-  if (typeof window === "undefined") return "free";
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return "free";
-    const parsed = JSON.parse(raw) as Stored;
-    return parsed.plan ?? "free";
-  } catch {
-    return "free";
-  }
-}
-
-function readUsage(): Usage {
-  if (typeof window === "undefined") return { month: currentMonth(), used: 0 };
-  try {
-    const raw = window.localStorage.getItem(USAGE_KEY);
-    if (!raw) return { month: currentMonth(), used: 0 };
-    const parsed = JSON.parse(raw) as Usage;
-    if (parsed.month !== currentMonth()) return { month: currentMonth(), used: 0 };
-    return parsed;
-  } catch {
-    return { month: currentMonth(), used: 0 };
-  }
-}
-
+// Module-level cache so multiple consumers share a single server fetch.
+let cache: Snapshot | null = null;
+let inflight: Promise<Snapshot> | null = null;
 const listeners = new Set<() => void>();
+
 function emit() {
   for (const l of listeners) l();
 }
 
-export function setPlan(id: PlanId) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan: id } satisfies Stored));
-  emit();
+async function fetchSnapshot(): Promise<Snapshot> {
+  if (inflight) return inflight;
+  inflight = (async () => {
+    try {
+      const snap = (await getMyPlanUsage()) as Snapshot;
+      cache = snap;
+      emit();
+      return snap;
+    } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
 }
 
-export function incrementUsage(n = 1) {
-  if (typeof window === "undefined") return;
-  const u = readUsage();
-  const next: Usage = { month: u.month, used: u.used + n };
-  window.localStorage.setItem(USAGE_KEY, JSON.stringify(next));
-  emit();
+/**
+ * Refresh the cached plan/usage snapshot from the server. Call after a
+ * successful AI generation so the sidebar usage bar updates immediately.
+ */
+export function refreshUsage(): void {
+  void fetchSnapshot().catch(() => {
+    /* swallow — UI will retry on next mount */
+  });
+}
+
+/**
+ * Back-compat shim. The real source of truth lives server-side now;
+ * this just triggers a refresh of the cached snapshot.
+ */
+export function incrementUsage(_n = 1): void {
+  refreshUsage();
 }
 
 export function usePlan() {
   const [, setTick] = useState(0);
+  const updatePlan = useServerFn(setMyPlan);
+
   useEffect(() => {
     const cb = () => setTick((t) => t + 1);
     listeners.add(cb);
+    if (!cache && typeof window !== "undefined") {
+      void fetchSnapshot().catch(() => {});
+    }
     return () => {
       listeners.delete(cb);
     };
   }, []);
 
-  const planId = readPlan();
-  const plan = PLANS.find((p) => p.id === planId) ?? PLANS[0];
-  const usage = readUsage();
-  const remaining = Math.max(0, plan.monthlyCredits - usage.used);
-  const percent = Math.min(100, Math.round((usage.used / plan.monthlyCredits) * 100));
+  const snap = cache ?? { plan: "free" as PlanId, used: 0, limit: 25 };
+  const plan = PLANS.find((p) => p.id === snap.plan) ?? PLANS[0];
+  const remaining = Math.max(0, snap.limit - snap.used);
+  const percent = Math.min(100, Math.round((snap.used / snap.limit) * 100));
+
+  const setPlan = async (id: PlanId) => {
+    const next = (await updatePlan({ data: { plan: id } })) as Snapshot;
+    cache = next;
+    emit();
+  };
 
   return {
     plan,
-    planId,
-    used: usage.used,
+    planId: snap.plan,
+    used: snap.used,
     remaining,
     percent,
-    isPaid: planId !== "free",
-    isCreator: planId === "creator",
+    isPaid: snap.plan !== "free",
+    isCreator: snap.plan === "creator",
+    setPlan,
   };
+}
+
+/**
+ * Imperative plan switch for non-hook callers. Updates the server, then
+ * refreshes the cached snapshot for all `usePlan` subscribers.
+ */
+export async function setPlan(id: PlanId): Promise<void> {
+  const next = (await setMyPlan({ data: { plan: id } })) as Snapshot;
+  cache = next;
+  emit();
 }

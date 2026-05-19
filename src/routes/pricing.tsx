@@ -26,10 +26,14 @@ function PricingPage() {
   const [yearly, setYearly] = useState(true);
   const { planId } = usePlan();
 
-  const choose = (id: PlanId) => {
-    setPlan(id);
-    if (id === "free") toast.success("Switched to Free plan.");
-    else toast.success(`Upgraded to ${id === "pro" ? "Pro" : "Creator"} (demo).`);
+  const choose = async (id: PlanId) => {
+    try {
+      await setPlan(id);
+      if (id === "free") toast.success("Switched to Free plan.");
+      else toast.success(`Upgraded to ${id === "pro" ? "Pro" : "Creator"} (demo).`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update plan.");
+    }
   };
 
   return (

@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useEffect, useMemo, useState } from "react";
 import { Lightbulb, FileText, Clapperboard, Send, Plus, ArrowRight, Sparkles, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/workflow")({
+  beforeLoad: requireAuthBeforeLoad,
   component: WorkflowPage,
   head: () => ({
     meta: [

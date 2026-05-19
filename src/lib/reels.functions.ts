@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeCredit } from "./usage.server";
 
 const InputSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
@@ -45,9 +46,12 @@ Rules:
 export const generateReels = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data }): Promise<GeneratedReels> => {
+  .handler(async ({ data, context }): Promise<GeneratedReels> => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Server-side quota enforcement — prevents client-side bypass.
+    await consumeCredit(context.userId, 1);
 
     const duration = data.durationSec ?? 600;
     const userPrompt = `Source video topic / description:\n${data.topic}${

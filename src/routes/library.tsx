@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useState } from "react";
 import { Library as LibraryIcon, Search, Zap, Hash, MessageSquare, Clapperboard, Copy, Check } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/library")({
+  beforeLoad: requireAuthBeforeLoad,
   component: LibraryPage,
   head: () => ({
     meta: [

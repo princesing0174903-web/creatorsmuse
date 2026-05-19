@@ -10,18 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRouteImport } from './routes/workflow'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as IndexRouteImport } from './routes/index'
 
 const WorkflowRoute = WorkflowRouteImport.update({
   id: '/workflow',
   path: '/workflow',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -37,6 +45,11 @@ const ReelsRoute = ReelsRouteImport.update({
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -59,6 +72,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -67,83 +85,104 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
   '/reels': typeof ReelsRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
   '/reels': typeof ReelsRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
   '/reels': typeof ReelsRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/contact'
     | '/dashboard'
     | '/library'
     | '/login'
     | '/pricing'
+    | '/privacy'
     | '/projects'
     | '/reels'
     | '/settings'
+    | '/terms'
     | '/workflow'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/contact'
     | '/dashboard'
     | '/library'
     | '/login'
     | '/pricing'
+    | '/privacy'
     | '/projects'
     | '/reels'
     | '/settings'
+    | '/terms'
     | '/workflow'
   id:
     | '__root__'
     | '/'
+    | '/contact'
     | '/dashboard'
     | '/library'
     | '/login'
     | '/pricing'
+    | '/privacy'
     | '/projects'
     | '/reels'
     | '/settings'
+    | '/terms'
     | '/workflow'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRoute
   ReelsRoute: typeof ReelsRoute
   SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
   WorkflowRoute: typeof WorkflowRoute
 }
 
@@ -154,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/workflow'
       fullPath: '/workflow'
       preLoaderRoute: typeof WorkflowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -175,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -205,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -217,25 +277,18 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContactRoute: ContactRoute,
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRoute,
   ReelsRoute: ReelsRoute,
   SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
   WorkflowRoute: WorkflowRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeCredit } from "./usage.server";
 
 const InputSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
@@ -53,9 +54,12 @@ Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, on
 export const generateAssets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data }): Promise<GeneratedAssets> => {
+  .handler(async ({ data, context }): Promise<GeneratedAssets> => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Server-side quota enforcement — prevents client-side bypass.
+    await consumeCredit(context.userId, 1);
 
     const userPrompt = `Topic / context:\n${data.topic}${
       data.fileName ? `\n\nUploaded video filename (for tone hints only): ${data.fileName}` : ""

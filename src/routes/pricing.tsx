@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Lock } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PLANS, setPlan, usePlan, type PlanId } from "@/lib/plan";
 import { cn } from "@/lib/utils";
@@ -27,10 +27,15 @@ function PricingPage() {
   const { planId } = usePlan();
 
   const choose = async (id: PlanId) => {
+    if (id !== "free") {
+      toast.message("Checkout coming soon", {
+        description: "Paid plans unlock at public launch. Join the waitlist below.",
+      });
+      return;
+    }
     try {
       await setPlan(id);
-      if (id === "free") toast.success("Switched to Free plan.");
-      else toast.success(`Upgraded to ${id === "pro" ? "Pro" : "Creator"} (demo).`);
+      toast.success("Switched to Free plan.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update plan.");
     }
@@ -145,6 +150,7 @@ function PricingPage() {
                   disabled={active}
                   className={cn(
                     "h-11 rounded-lg font-semibold text-sm uppercase tracking-wider transition-transform",
+                    "inline-flex items-center justify-center gap-2",
                     active
                       ? "cursor-default border border-border bg-secondary/60 text-muted-foreground"
                       : plan.highlight
@@ -152,15 +158,28 @@ function PricingPage() {
                         : "border border-primary/40 text-primary hover:bg-primary/10",
                   )}
                 >
-                  {active ? "Current plan" : plan.id === "free" ? "Downgrade" : `Upgrade to ${plan.name}`}
+                  {active ? (
+                    "Current plan"
+                  ) : plan.id === "free" ? (
+                    "Switch to Free"
+                  ) : (
+                    <>
+                      <Lock className="size-3.5" /> Coming soon
+                    </>
+                  )}
                 </button>
+                {!active && plan.id !== "free" && (
+                  <p className="mt-2 text-center text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Billing launches publicly soon
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          Demo billing — switching plans updates your local workspace instantly. Real Stripe checkout coming soon.{" "}
+          Pro & Creator unlock at public launch with secure Stripe checkout. Until then, every account runs on the Free plan.{" "}
           <Link to="/settings" className="text-primary hover:underline">Manage account →</Link>
         </p>
       </div>

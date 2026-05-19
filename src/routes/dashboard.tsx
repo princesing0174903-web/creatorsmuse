@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import {
   Suspense,
   lazy,
@@ -29,6 +30,7 @@ import { UpgradeModal } from "@/components/upgrade-modal";
 const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
 
 export const Route = createFileRoute("/dashboard")({
+  beforeLoad: requireAuthBeforeLoad,
   component: DashboardPage,
   head: () => ({
     meta: [

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { generateReels, type GeneratedReel } from "@/lib/reels.functions";
 
 export const Route = createFileRoute("/reels")({
+  beforeLoad: requireAuthBeforeLoad,
   component: ReelsPage,
   head: () => ({
     meta: [

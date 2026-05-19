@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useState } from "react";
 import { User, LogOut, Palette, CreditCard, Sparkles, Check, Bell, Mail } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -7,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
+  beforeLoad: requireAuthBeforeLoad,
   component: SettingsPage,
   head: () => ({
     meta: [

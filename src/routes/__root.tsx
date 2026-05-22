@@ -82,8 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Creator’s Muse — AI Growth Engine for Creators" },
       { name: "twitter:description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8cmy4amAScYmGbvCGPVEFY0DWrR2/social-images/social-1778841829896-Creater,s_Muse_image.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8cmy4amAScYmGbvCGPVEFY0DWrR2/social-images/social-1778841829896-Creater,s_Muse_image.webp" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/fc4fe9bb-a17a-4fb8-b51a-e85ef6927940" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/fc4fe9bb-a17a-4fb8-b51a-e85ef6927940" },
     ],
     links: [
       {

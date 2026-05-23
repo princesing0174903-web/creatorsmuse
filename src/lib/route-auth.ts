@@ -1,20 +1,30 @@
 import { redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import { getClientSession, isAuthCallbackUrl } from "@/lib/auth";
 
 /**
- * Route-level auth guard. Runs in `beforeLoad`. On the client it validates
- * the Supabase session BEFORE the component mounts (no flash of protected
- * UI). On the server it is a no-op — no user data is loaded in SSR for
- * these pages, so we let the client hydrate and re-check.
- *
- * Server functions called from these routes still enforce
- * `requireSupabaseAuth` independently, so this guard is a UX layer, not a
- * security boundary.
+ * Client route guard: waits for hydration, validates Supabase session.
+ * Server functions still enforce `requireSupabaseAuth` separately.
  */
-export async function requireAuthBeforeLoad(_args?: unknown) {
+export async function requireAuthBeforeLoad() {
   if (typeof window === "undefined") return;
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
+
+  const session = await getClientSession();
+  if (!session?.user) {
     throw redirect({ to: "/login" });
+  }
+}
+
+/** Use on /login so authenticated users (and OAuth callbacks) never see the sign-in form. */
+export async function redirectIfAuthenticated() {
+  if (typeof window === "undefined") return;
+
+  const session = await getClientSession();
+  if (session?.user) {
+    throw redirect({ to: "/dashboard", replace: true });
+  }
+
+  // Stale callback URL without a session — strip params so the login form can render.
+  if (isAuthCallbackUrl()) {
+    window.history.replaceState(null, "", window.location.pathname);
   }
 }

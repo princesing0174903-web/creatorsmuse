@@ -12,6 +12,7 @@ import {
   Workflow,
   Sparkles,
 } from "lucide-react";
+import { AuthScreen } from "@/components/auth-screen";
 import { useAuth, signOut } from "@/lib/auth";
 import { usePlan } from "@/lib/plan";
 import { cn } from "@/lib/utils";
@@ -27,28 +28,28 @@ const NAV = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, ready } = useAuth();
   const { plan, used, percent } = usePlan();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
+  // Route `beforeLoad` already verified session; only handle rare expiry after mount.
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login" });
-  }, [loading, user, navigate]);
+    if (ready && !user) {
+      navigate({ to: "/login", replace: true });
+    }
+  }, [ready, user, navigate]);
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="size-6 animate-pulse rounded bg-primary/70 shadow-glow" />
-      </div>
-    );
+  // Route guard already validated session; only block UI when we have no user yet.
+  if (!user && !ready) {
+    return <AuthScreen message="Loading your workspace…" />;
   }
   if (!user) return null;
 
   const logout = async () => {
     await signOut();
-    navigate({ to: "/login" });
+    navigate({ to: "/login", replace: true });
   };
 
   return (

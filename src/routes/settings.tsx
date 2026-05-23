@@ -27,7 +27,7 @@ function SettingsPage() {
 
   const logout = async () => {
     await signOut();
-    navigate({ to: "/login" });
+    navigate({ to: "/login", replace: true });
   };
 
   return (

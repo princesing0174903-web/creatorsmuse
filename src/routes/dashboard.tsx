@@ -23,6 +23,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
+import { AuthScreen } from "@/components/auth-screen";
 import { AppShell } from "@/components/app-shell";
 import { usePlan, incrementUsage } from "@/lib/plan";
 import { UpgradeModal } from "@/components/upgrade-modal";
@@ -31,6 +32,8 @@ const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: requireAuthBeforeLoad,
+  pendingComponent: () => <AuthScreen message="Opening your workbench…" />,
+  pendingMs: 0,
   component: DashboardPage,
   head: () => ({
     meta: [

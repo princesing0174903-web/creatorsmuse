@@ -1,5 +1,9 @@
 import { memo, useCallback, useState } from "react";
+<<<<<<< HEAD
 import { Check, Copy, Hash, MessageSquare, Clapperboard, Zap, Flame, TrendingUp, Heart } from "lucide-react";
+=======
+import { Check, Copy, Hash, MessageSquare, Clapperboard, Zap, Flame, TrendingUp, Heart, Crosshair, Radio, Eye } from "lucide-react";
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import type { GeneratedAssets, ScoredAsset } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 
@@ -165,6 +169,12 @@ const ResultLine = memo(function ResultLine({
         <ScoreBar icon={Flame} label="Viral" value={item.virality} delay={delay} />
         <ScoreBar icon={TrendingUp} label="Engage" value={item.engagement} delay={delay + 80} />
         <ScoreBar icon={Heart} label="Emotion" value={item.emotion} delay={delay + 160} />
+<<<<<<< HEAD
+=======
+        <ScoreBar icon={Crosshair} label="Hook" value={item.hookStrength} delay={delay + 240} />
+        <ScoreBar icon={Radio} label="Trend" value={item.trendAlignment} delay={delay + 320} />
+        <ScoreBar icon={Eye} label="Retain" value={item.audienceRetention} delay={delay + 400} />
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
       </div>
 
       {/* tier label */}

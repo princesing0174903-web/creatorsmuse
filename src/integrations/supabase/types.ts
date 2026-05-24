@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+<<<<<<< HEAD
+=======
+      usage_counters: {
+        Row: {
+          month: string
+          updated_at: string
+          used: number
+          user_id: string
+        }
+        Insert: {
+          month: string
+          updated_at?: string
+          used?: number
+          user_id: string
+        }
+        Update: {
+          month?: string
+          updated_at?: string
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_plans: {
+        Row: {
+          plan: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          plan?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          plan?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     }
     Views: {
       [_ in never]: never

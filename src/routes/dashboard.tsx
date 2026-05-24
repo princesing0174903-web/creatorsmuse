@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { requireAuthBeforeLoad } from "@/lib/auth-guard";
+=======
+import { requireAuthBeforeLoad } from "@/lib/route-auth";
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import {
   Suspense,
   lazy,
@@ -16,17 +20,34 @@ import {
   Film,
   Zap,
   X,
+<<<<<<< HEAD
+=======
+  AlertTriangle,
+  RotateCcw,
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
+<<<<<<< HEAD
 import { AppShell } from "@/components/app-shell";
+=======
+import { AuthScreen } from "@/components/auth-screen";
+import { AppShell } from "@/components/app-shell";
+import { usePlan, incrementUsage } from "@/lib/plan";
+import { UpgradeModal } from "@/components/upgrade-modal";
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 
 const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: requireAuthBeforeLoad,
+<<<<<<< HEAD
+=======
+  pendingComponent: () => <AuthScreen message="Opening your workbench…" />,
+  pendingMs: 0,
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   component: DashboardPage,
   head: () => ({
     meta: [
@@ -42,8 +63,16 @@ function DashboardPage() {
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GeneratedAssets | null>(null);
+<<<<<<< HEAD
   const inputRef = useRef<HTMLInputElement>(null);
   const generateFn = useServerFn(generateAssets);
+=======
+  const [error, setError] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const generateFn = useServerFn(generateAssets);
+  const { plan, remaining } = usePlan();
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 
   const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -57,8 +86,18 @@ function DashboardPage() {
 
   const generate = useCallback(async () => {
     if (!canGenerate) return;
+<<<<<<< HEAD
     setLoading(true);
     setResults(null);
+=======
+    if (remaining <= 0) {
+      setUpgradeOpen(true);
+      return;
+    }
+    setLoading(true);
+    setResults(null);
+    setError(null);
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     try {
       const r = await generateFn({
         data: {
@@ -67,13 +106,24 @@ function DashboardPage() {
         },
       });
       setResults(r);
+<<<<<<< HEAD
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generation failed";
+=======
+      incrementUsage(1);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Generation failed";
+      setError(msg);
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
       toast.error(msg);
     } finally {
       setLoading(false);
     }
+<<<<<<< HEAD
   }, [canGenerate, generateFn, trimmedTopic, file]);
+=======
+  }, [canGenerate, generateFn, trimmedTopic, file, remaining]);
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 
   return (
     <AppShell>
@@ -204,8 +254,14 @@ function DashboardPage() {
 
             {/* Results column */}
             <div className="col-span-12 lg:col-span-7">
+<<<<<<< HEAD
               {!results && !loading && <EmptyState />}
               {loading && <LoadingState />}
+=======
+              {!results && !loading && !error && <EmptyState />}
+              {loading && <LoadingState />}
+              {error && !loading && <ErrorState message={error} onRetry={generate} />}
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
               {results && (
                 <Suspense fallback={<LoadingState />}>
                   <ResultsGrid results={results} />
@@ -214,10 +270,39 @@ function DashboardPage() {
             </div>
           </div>
         </div>
+<<<<<<< HEAD
+=======
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        reason={`You've used all ${plan.monthlyCredits} generations on the ${plan.name} plan this month.`}
+      />
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     </AppShell>
   );
 }
 
+<<<<<<< HEAD
+=======
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex h-full min-h-[480px] flex-col items-center justify-center rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+      <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-destructive/10 ring-1 ring-destructive/30">
+        <AlertTriangle className="size-6 text-destructive" />
+      </div>
+      <p className="text-sm font-medium text-foreground">Synthesis failed</p>
+      <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+      <button
+        onClick={onRetry}
+        className="mt-5 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/20"
+      >
+        <RotateCcw className="size-3.5" /> Retry
+      </button>
+    </div>
+  );
+}
+
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 function EmptyState() {
   return (
     <div className="flex h-full min-h-[480px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/20 p-8 text-center">

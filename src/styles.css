@@ -1,11 +1,18 @@
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
+=======
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
+<<<<<<< HEAD
+=======
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+>>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 
 /*
  * Design system definition.

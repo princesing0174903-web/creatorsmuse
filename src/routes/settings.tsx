@@ -1,9 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-<<<<<<< HEAD
-import { requireAuthBeforeLoad } from "@/lib/auth-guard";
-=======
 import { requireAuthBeforeLoad } from "@/lib/route-auth";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import { useState } from "react";
 import { User, LogOut, Palette, CreditCard, Sparkles, Check, Bell, Mail } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -31,11 +27,7 @@ function SettingsPage() {
 
   const logout = async () => {
     await signOut();
-<<<<<<< HEAD
-    navigate({ to: "/login" });
-=======
     navigate({ to: "/login", replace: true });
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   };
 
   return (

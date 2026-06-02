@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-<<<<<<< HEAD
-=======
 import { consumeCredit } from "./usage.server";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 
 const InputSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
@@ -16,12 +13,9 @@ const ScoredItem = z.object({
   virality: z.number().min(0).max(100),
   engagement: z.number().min(0).max(100),
   emotion: z.number().min(0).max(100),
-<<<<<<< HEAD
-=======
   hookStrength: z.number().min(0).max(100),
   trendAlignment: z.number().min(0).max(100),
   audienceRetention: z.number().min(0).max(100),
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 });
 
 const OutputSchema = z.object({
@@ -51,24 +45,15 @@ Scoring (per item, integers 0-100, be discriminating — do NOT cluster everythi
 - virality: predicted ceiling reach / share-ability based on hook strength, novelty, controversy, pattern interrupt.
 - engagement: predicted comments + saves + watch-through, based on specificity, debate potential, CTA strength.
 - emotion: emotional intensity (curiosity, anger, awe, FOMO, joy). Calm/informational = low. Visceral = high.
-<<<<<<< HEAD
-=======
 - hookStrength: how hard the FIRST 5 words pull attention. Pattern interrupt, specificity, stakes. Generic openers = low.
 - trendAlignment: how well the angle rides current platform/cultural trends right now (formats, sounds, debates). Evergreen but flat = low. On-the-nose timely = high.
 - audienceRetention: predicted % of viewers who stay through. Strong payoff loop, escalating tension, tight pacing = high. Front-loaded with no payoff = low.
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, one 48 is more useful than five 90s.
 `;
 
 export const generateAssets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-<<<<<<< HEAD
-  .handler(async ({ data }): Promise<GeneratedAssets> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-
-=======
   .handler(async ({ data, context }): Promise<GeneratedAssets> => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
@@ -76,7 +61,6 @@ export const generateAssets = createServerFn({ method: "POST" })
     // Server-side quota enforcement — prevents client-side bypass.
     await consumeCredit(context.userId, 1);
 
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     const userPrompt = `Topic / context:\n${data.topic}${
       data.fileName ? `\n\nUploaded video filename (for tone hints only): ${data.fileName}` : ""
     }\n\nReturn 5 hooks, 5 captions, 5 posts, 5 shorts angles. All distinct, niche-specific.`;
@@ -107,10 +91,6 @@ export const generateAssets = createServerFn({ method: "POST" })
                     virality: { type: "integer", minimum: 0, maximum: 100 },
                     engagement: { type: "integer", minimum: 0, maximum: 100 },
                     emotion: { type: "integer", minimum: 0, maximum: 100 },
-<<<<<<< HEAD
-                  },
-                  required: ["text", "virality", "engagement", "emotion"],
-=======
                     hookStrength: { type: "integer", minimum: 0, maximum: 100 },
                     trendAlignment: { type: "integer", minimum: 0, maximum: 100 },
                     audienceRetention: { type: "integer", minimum: 0, maximum: 100 },
@@ -119,7 +99,6 @@ export const generateAssets = createServerFn({ method: "POST" })
                     "text", "virality", "engagement", "emotion",
                     "hookStrength", "trendAlignment", "audienceRetention",
                   ],
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
                   additionalProperties: false,
                 };
                 const arr = { type: "array", items: item, minItems: 5, maxItems: 5 };

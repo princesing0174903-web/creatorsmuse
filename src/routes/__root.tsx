@@ -9,17 +9,8 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-<<<<<<< HEAD
-import { Toaster } from "@/components/ui/sonner";
-import { ensureAuthReady, hasOAuthCallbackParams } from "@/lib/auth";
-
-if (typeof window !== "undefined" && !hasOAuthCallbackParams()) {
-  void ensureAuthReady();
-}
-=======
 import { AuthInit } from "@/components/auth-init";
 import { Toaster } from "@/components/ui/sonner";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 
 function NotFoundComponent() {
   return (
@@ -93,13 +84,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Creator’s Muse — AI Growth Engine for Creators" },
       { name: "twitter:description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
-<<<<<<< HEAD
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8cmy4amAScYmGbvCGPVEFY0DWrR2/social-images/social-1778841829896-Creater,s_Muse_image.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/8cmy4amAScYmGbvCGPVEFY0DWrR2/social-images/social-1778841829896-Creater,s_Muse_image.webp" },
-=======
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f6b3028c-984c-49c8-9621-8b32a10b37f8" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f6b3028c-984c-49c8-9621-8b32a10b37f8" },
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     ],
     links: [
       {
@@ -133,10 +119,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-<<<<<<< HEAD
-=======
       <AuthInit />
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
       <Outlet />
       <Toaster richColors closeButton position="top-center" />
     </QueryClientProvider>

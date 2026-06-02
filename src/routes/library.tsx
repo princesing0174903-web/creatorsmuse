@@ -1,9 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
-import { requireAuthBeforeLoad } from "@/lib/auth-guard";
-=======
 import { requireAuthBeforeLoad } from "@/lib/route-auth";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import { useState } from "react";
 import { Library as LibraryIcon, Search, Zap, Hash, MessageSquare, Clapperboard, Copy, Check } from "lucide-react";
 import { AppShell } from "@/components/app-shell";

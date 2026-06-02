@@ -9,18 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-<<<<<<< HEAD
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ProjectsRouteImport } from './routes/projects'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LibraryRouteImport } from './routes/library'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-
-=======
 import { Route as WorkflowRouteImport } from './routes/workflow'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -44,21 +32,14 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-=======
 const ReelsRoute = ReelsRouteImport.update({
   id: '/reels',
   path: '/reels',
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -66,8 +47,6 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
-=======
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -78,7 +57,6 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -89,61 +67,21 @@ const LibraryRoute = LibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-=======
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
-=======
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/library': typeof LibraryRoute
-  '/login': typeof LoginRoute
-  '/projects': typeof ProjectsRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/settings': typeof SettingsRoute
-  '/auth/callback': typeof AuthCallbackRoute
-}
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/library': typeof LibraryRoute
-  '/login': typeof LoginRoute
-  '/projects': typeof ProjectsRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/settings': typeof SettingsRoute
-  '/auth/callback': typeof AuthCallbackRoute
-=======
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -172,21 +110,10 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-<<<<<<< HEAD
-  '/dashboard': typeof DashboardRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/library': typeof LibraryRoute
-  '/login': typeof LoginRoute
-  '/projects': typeof ProjectsRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/settings': typeof SettingsRoute
-  '/auth/callback': typeof AuthCallbackRoute
-=======
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
@@ -198,44 +125,11 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-<<<<<<< HEAD
-    | '/dashboard'
-    | '/forgot-password'
-    | '/library'
-    | '/login'
-    | '/projects'
-    | '/reset-password'
-    | '/settings'
-    | '/auth/callback'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/dashboard'
-    | '/forgot-password'
-    | '/library'
-    | '/login'
-    | '/projects'
-    | '/reset-password'
-    | '/settings'
-    | '/auth/callback'
-  id:
-    | '__root__'
-    | '/'
-    | '/dashboard'
-    | '/forgot-password'
-    | '/library'
-    | '/login'
-    | '/projects'
-    | '/reset-password'
-    | '/settings'
-    | '/auth/callback'
-=======
     | '/contact'
     | '/dashboard'
     | '/library'
@@ -275,21 +169,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/terms'
     | '/workflow'
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-<<<<<<< HEAD
-  DashboardRoute: typeof DashboardRoute
-  ForgotPasswordRoute: typeof ForgotPasswordRoute
-  LibraryRoute: typeof LibraryRoute
-  LoginRoute: typeof LoginRoute
-  ProjectsRoute: typeof ProjectsRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
-  SettingsRoute: typeof SettingsRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
-=======
   ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
@@ -301,13 +184,10 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TermsRoute: typeof TermsRoute
   WorkflowRoute: typeof WorkflowRoute
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-<<<<<<< HEAD
-=======
     '/workflow': {
       id: '/workflow'
       path: '/workflow'
@@ -322,7 +202,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -330,19 +209,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-=======
     '/reels': {
       id: '/reels'
       path: '/reels'
       fullPath: '/reels'
       preLoaderRoute: typeof ReelsRouteImport
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -352,8 +223,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
-=======
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -368,7 +237,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     '/login': {
       id: '/login'
       path: '/login'
@@ -383,16 +251,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-=======
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -400,8 +258,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
-=======
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -409,7 +265,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     '/': {
       id: '/'
       path: '/'
@@ -417,31 +272,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-=======
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-<<<<<<< HEAD
-  DashboardRoute: DashboardRoute,
-  ForgotPasswordRoute: ForgotPasswordRoute,
-  LibraryRoute: LibraryRoute,
-  LoginRoute: LoginRoute,
-  ProjectsRoute: ProjectsRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
-  SettingsRoute: SettingsRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
-=======
   ContactRoute: ContactRoute,
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
@@ -453,7 +288,6 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TermsRoute: TermsRoute,
   WorkflowRoute: WorkflowRoute,
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

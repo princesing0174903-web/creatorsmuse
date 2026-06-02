@@ -1,9 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-<<<<<<< HEAD
-import { useState } from "react";
-=======
 import { useEffect, useState } from "react";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import {
   LayoutDashboard,
   FolderOpen,
@@ -12,10 +8,6 @@ import {
   LogOut,
   Menu,
   X,
-<<<<<<< HEAD
-} from "lucide-react";
-import { useAuth, signOut } from "@/lib/auth";
-=======
   Clapperboard,
   Workflow,
   Sparkles,
@@ -23,43 +15,25 @@ import { useAuth, signOut } from "@/lib/auth";
 import { AuthScreen } from "@/components/auth-screen";
 import { useAuth, signOut } from "@/lib/auth";
 import { usePlan } from "@/lib/plan";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" as const },
-<<<<<<< HEAD
-  { label: "Projects", icon: FolderOpen, to: "/projects" as const },
-  { label: "Library", icon: Library, to: "/library" as const },
-=======
   { label: "Reel Generator", icon: Clapperboard, to: "/reels" as const },
   { label: "Workflow", icon: Workflow, to: "/workflow" as const },
   { label: "Projects", icon: FolderOpen, to: "/projects" as const },
   { label: "Library", icon: Library, to: "/library" as const },
   { label: "Pricing", icon: Sparkles, to: "/pricing" as const },
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   { label: "Settings", icon: Settings, to: "/settings" as const },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-<<<<<<< HEAD
-  const { user, loading } = useAuth();
-=======
   const { user, ready } = useAuth();
   const { plan, used, percent } = usePlan();
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
-<<<<<<< HEAD
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="size-6 animate-pulse rounded bg-primary/70 shadow-glow" />
-      </div>
-    );
-=======
   // Route `beforeLoad` already verified session; only handle rare expiry after mount.
   useEffect(() => {
     if (ready && !user) {
@@ -70,17 +44,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Route guard already validated session; only block UI when we have no user yet.
   if (!user && !ready) {
     return <AuthScreen message="Loading your workspace…" />;
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   }
   if (!user) return null;
 
   const logout = async () => {
     await signOut();
-<<<<<<< HEAD
-    navigate({ to: "/login" });
-=======
     navigate({ to: "/login", replace: true });
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
   };
 
   return (
@@ -135,8 +104,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-border p-4">
-<<<<<<< HEAD
-=======
           <Link
             to="/pricing"
             className="mb-3 block rounded-lg border border-border bg-background/40 p-3 transition-colors hover:border-primary/30"
@@ -161,7 +128,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </p>
             )}
           </Link>
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
           <div className="flex items-center gap-3 rounded-lg bg-background/40 p-2.5">
             <div className="flex size-9 items-center justify-center rounded-full bg-gradient-primary text-xs font-bold text-primary-foreground">
               {(user?.name ?? "U").slice(0, 1).toUpperCase()}

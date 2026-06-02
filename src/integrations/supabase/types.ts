@@ -41,8 +41,6 @@ export type Database = {
         }
         Relationships: []
       }
-<<<<<<< HEAD
-=======
       usage_counters: {
         Row: {
           month: string
@@ -82,7 +80,6 @@ export type Database = {
         }
         Relationships: []
       }
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     }
     Views: {
       [_ in never]: never

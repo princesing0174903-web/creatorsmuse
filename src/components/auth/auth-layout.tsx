@@ -9,7 +9,7 @@ export function AuthLayout({
   description,
   loading = false,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   title: string;
   description: string;
   loading?: boolean;

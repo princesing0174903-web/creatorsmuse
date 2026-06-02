@@ -21,6 +21,14 @@ export async function getUserPlan(userId: string): Promise<ServerPlanId> {
 
 export async function setUserPlan(userId: string, plan: ServerPlanId): Promise<void> {
   if (!(plan in PLAN_LIMITS)) throw new Error("Invalid plan");
+  // Defense-in-depth: paid tiers may only be assigned via a verified billing
+  // webhook (Stripe checkout.session.completed). No client-callable surface
+  // is allowed to elevate a user's plan without proof of payment.
+  if (plan !== "free") {
+    throw new Error(
+      "setUserPlan: paid plans require a verified billing webhook; refusing to elevate without payment proof.",
+    );
+  }
   const { error } = await supabaseAdmin.from("user_plans").upsert({
     user_id: userId,
     plan,
@@ -55,27 +63,23 @@ export async function consumeCredit(
   const limit = PLAN_LIMITS[plan];
   const month = currentMonth();
 
-  const { data: existing } = await supabaseAdmin
-    .from("usage_counters")
-    .select("used")
-    .eq("user_id", userId)
-    .eq("month", month)
-    .maybeSingle();
-
-  const currentUsed = existing?.used ?? 0;
-  if (currentUsed + n > limit) {
-    throw new Error(
-      `QUOTA_EXCEEDED: Monthly AI credit limit reached on the ${plan} plan (${currentUsed}/${limit}). Upgrade to continue generating.`,
-    );
-  }
-
-  const nextUsed = currentUsed + n;
-  const { error } = await supabaseAdmin.from("usage_counters").upsert({
-    user_id: userId,
-    month,
-    used: nextUsed,
-    updated_at: new Date().toISOString(),
+  // Atomic check + increment via Postgres function — prevents the
+  // read-then-write race where two concurrent calls each pass the quota
+  // check before either has written its new total.
+  const { data, error } = await supabaseAdmin.rpc("consume_credit", {
+    p_user_id: userId,
+    p_n: n,
+    p_limit: limit,
+    p_month: month,
   });
-  if (error) throw new Error(`Failed to record usage: ${error.message}`);
+  if (error) {
+    if (error.message?.includes("QUOTA_EXCEEDED")) {
+      throw new Error(
+        `QUOTA_EXCEEDED: Monthly AI credit limit reached on the ${plan} plan (${limit} / month). Upgrade to continue generating.`,
+      );
+    }
+    throw new Error(`Failed to record usage: ${error.message}`);
+  }
+  const nextUsed = typeof data === "number" ? data : Number(data);
   return { plan, used: nextUsed, limit };
 }

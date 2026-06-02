@@ -291,6 +291,77 @@ export async function signOut() {
   applySession(null);
 }
 
+/** Alias of `waitForAuthHydration` used by route guards. */
+export async function ensureAuthReady(): Promise<void> {
+  await waitForAuthHydration();
+}
+
+/** Synchronous snapshot of the auth cache (use after `ensureAuthReady`). */
+export function getAuthSnapshot(): {
+  user: AuthUser | null;
+  loading: boolean;
+  ready: boolean;
+} {
+  return { user: cachedUser, loading: cachedLoading, ready: hydrated };
+}
+
+/** Run OAuth callback exchange and return the resulting session (or null). */
+export async function completeOAuthCallback(): Promise<Session | null> {
+  await absorbOAuthCallback();
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  if (data.session) applySession(data.session);
+  return data.session ?? null;
+}
+
+const AUTH_ERROR_KEY = "cm:auth-error";
+
+export function stashAuthError(message: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(AUTH_ERROR_KEY, message);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function consumeAuthErrorMessage(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const msg = window.sessionStorage.getItem(AUTH_ERROR_KEY);
+    if (msg) window.sessionStorage.removeItem(AUTH_ERROR_KEY);
+    return msg;
+  } catch {
+    return null;
+  }
+}
+
+export async function sendPasswordReset(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: getAuthRedirectUrl("/reset-password"),
+  });
+  if (error) throw error;
+}
+
+/** For password-recovery links: parse the hash and return the new session. */
+export async function recoverSessionFromHash(): Promise<Session | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    await absorbOAuthCallback();
+  } catch {
+    return null;
+  }
+  const { data, error } = await supabase.auth.getSession();
+  if (error) return null;
+  if (data.session) applySession(data.session);
+  return data.session ?? null;
+}
+
+export async function updatePassword(password: string) {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
 // Bootstrap before React paint so OAuth callbacks never flash the login form.
 if (typeof window !== "undefined") {
   initAuth();

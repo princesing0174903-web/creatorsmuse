@@ -1,9 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
-import { requireAuthBeforeLoad } from "@/lib/auth-guard";
-=======
 import { requireAuthBeforeLoad } from "@/lib/route-auth";
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
 import { FolderOpen } from "lucide-react";
 import { PlaceholderPage } from "@/components/app-shell";
 

@@ -23,16 +23,9 @@ function createSupabaseClient() {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
-<<<<<<< HEAD
-      // OAuth PKCE is completed explicitly in completeOAuthCallback() so tokens
-      // are never left in the address bar for the browser to display.
-      detectSessionInUrl: false,
-      flowType: 'pkce',
-=======
       detectSessionInUrl: typeof window !== 'undefined',
       flowType: 'pkce',
       storageKey: 'creatorsmuse-auth',
->>>>>>> 8b3e73a64e4aecaf4f76711263e13f7c325f65dc
     }
   });
 }

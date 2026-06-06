@@ -306,14 +306,37 @@ function ScoreRow({ icon: Icon, label, value }: { icon: typeof Flame; label: str
   );
 }
 
-function ReelCard({ reel, index }: { reel: GeneratedReel; index: number }) {
+const STUDIO_HANDOFF_KEY = "nexus.reel.studio.candidate";
+
+function ReelCard({ reel, index, topic }: { reel: GeneratedReel; index: number; topic: string }) {
   const t = tier(reel.virality);
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
   const copy = useCallback(async () => {
     await navigator.clipboard.writeText(`${reel.hook}\n\n${reel.caption}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   }, [reel.hook, reel.caption]);
+  const startReel = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(
+        STUDIO_HANDOFF_KEY,
+        JSON.stringify({
+          title: reel.title,
+          hook: reel.hook,
+          caption: reel.caption,
+          reason: reel.reason,
+          startSec: reel.startSec,
+          endSec: reel.endSec,
+          virality: reel.virality,
+          topic: topic || reel.title,
+        }),
+      );
+    } catch {
+      // ignore storage errors
+    }
+    navigate({ to: "/reels/studio" });
+  }, [reel, topic, navigate]);
 
   return (
     <div
@@ -363,6 +386,16 @@ function ReelCard({ reel, index }: { reel: GeneratedReel; index: number }) {
         <ScoreRow icon={Radio} label="Trend" value={reel.trendAlignment} />
         <ScoreRow icon={Eye} label="Retain" value={reel.audienceRetention} />
       </div>
+
+      <button
+        onClick={startReel}
+        className={cn(
+          "mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-bold uppercase tracking-wider text-primary-foreground transition-transform",
+          "shadow-glow hover:scale-[1.01] active:scale-[0.99]",
+        )}
+      >
+        <Rocket className="size-3.5" /> Start this reel
+      </button>
 
       <button
         onClick={copy}

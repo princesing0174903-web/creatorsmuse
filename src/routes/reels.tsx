@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Upload, Film, X, Sparkles, Loader2, Scissors, Brain, Wand2, Gauge,
-  Flame, TrendingUp, Heart, Crosshair, Copy, Check, Play, Radio, Eye,
+  Flame, TrendingUp, Heart, Crosshair, Copy, Check, Play, Radio, Eye, Rocket,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ function ReelsPage() {
   const [reels, setReels] = useState<GeneratedReel[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const runReels = useServerFn(generateReels);
+  const lastTopic = useRef("");
 
   const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -65,6 +67,7 @@ function ReelsPage() {
     setLoading(true);
     setReels(null);
     try {
+      lastTopic.current = topic.trim() || `Video: ${file?.name ?? "untitled"}`;
       const r = await runReels({
         data: {
           topic: topic.trim() || `Video: ${file?.name ?? "untitled"}`,
@@ -200,7 +203,7 @@ function ReelsPage() {
                   </span>
                 </div>
                 {reels.map((r, i) => (
-                  <ReelCard key={i} reel={r} index={i} />
+                  <ReelCard key={i} reel={r} index={i} topic={lastTopic.current} />
                 ))}
               </div>
             )}
@@ -303,14 +306,37 @@ function ScoreRow({ icon: Icon, label, value }: { icon: typeof Flame; label: str
   );
 }
 
-function ReelCard({ reel, index }: { reel: GeneratedReel; index: number }) {
+const STUDIO_HANDOFF_KEY = "nexus.reel.studio.candidate";
+
+function ReelCard({ reel, index, topic }: { reel: GeneratedReel; index: number; topic: string }) {
   const t = tier(reel.virality);
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
   const copy = useCallback(async () => {
     await navigator.clipboard.writeText(`${reel.hook}\n\n${reel.caption}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   }, [reel.hook, reel.caption]);
+  const startReel = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(
+        STUDIO_HANDOFF_KEY,
+        JSON.stringify({
+          title: reel.title,
+          hook: reel.hook,
+          caption: reel.caption,
+          reason: reel.reason,
+          startSec: reel.startSec,
+          endSec: reel.endSec,
+          virality: reel.virality,
+          topic: topic || reel.title,
+        }),
+      );
+    } catch {
+      // ignore storage errors
+    }
+    navigate({ to: "/reels/studio" });
+  }, [reel, topic, navigate]);
 
   return (
     <div
@@ -360,6 +386,16 @@ function ReelCard({ reel, index }: { reel: GeneratedReel; index: number }) {
         <ScoreRow icon={Radio} label="Trend" value={reel.trendAlignment} />
         <ScoreRow icon={Eye} label="Retain" value={reel.audienceRetention} />
       </div>
+
+      <button
+        onClick={startReel}
+        className={cn(
+          "mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-bold uppercase tracking-wider text-primary-foreground transition-transform",
+          "shadow-glow hover:scale-[1.01] active:scale-[0.99]",
+        )}
+      >
+        <Rocket className="size-3.5" /> Start this reel
+      </button>
 
       <button
         onClick={copy}

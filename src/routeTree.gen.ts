@@ -23,6 +23,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReelsStudioRouteImport } from './routes/reels.studio'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 
 const WorkflowRoute = WorkflowRouteImport.update({
@@ -95,6 +96,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReelsStudioRoute = ReelsStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => ReelsRoute,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -111,12 +117,13 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
-  '/reels': typeof ReelsRoute
+  '/reels': typeof ReelsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/reels/studio': typeof ReelsStudioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -128,12 +135,13 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
-  '/reels': typeof ReelsRoute
+  '/reels': typeof ReelsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/reels/studio': typeof ReelsStudioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -146,12 +154,13 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/projects': typeof ProjectsRoute
-  '/reels': typeof ReelsRoute
+  '/reels': typeof ReelsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/workflow': typeof WorkflowRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/reels/studio': typeof ReelsStudioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/workflow'
     | '/auth/callback'
+    | '/reels/studio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/workflow'
     | '/auth/callback'
+    | '/reels/studio'
   id:
     | '__root__'
     | '/'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/workflow'
     | '/auth/callback'
+    | '/reels/studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -217,7 +229,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ProjectsRoute: typeof ProjectsRoute
-  ReelsRoute: typeof ReelsRoute
+  ReelsRoute: typeof ReelsRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TermsRoute: typeof TermsRoute
@@ -325,6 +337,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reels/studio': {
+      id: '/reels/studio'
+      path: '/studio'
+      fullPath: '/reels/studio'
+      preLoaderRoute: typeof ReelsStudioRouteImport
+      parentRoute: typeof ReelsRoute
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -334,6 +353,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface ReelsRouteChildren {
+  ReelsStudioRoute: typeof ReelsStudioRoute
+}
+
+const ReelsRouteChildren: ReelsRouteChildren = {
+  ReelsStudioRoute: ReelsStudioRoute,
+}
+
+const ReelsRouteWithChildren = ReelsRoute._addFileChildren(ReelsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -345,7 +374,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ProjectsRoute: ProjectsRoute,
-  ReelsRoute: ReelsRoute,
+  ReelsRoute: ReelsRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TermsRoute: TermsRoute,

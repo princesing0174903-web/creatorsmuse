@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 
 export type AuthUser = { id: string; email: string; name: string };
 
@@ -276,14 +277,14 @@ export async function signUpWithEmail(email: string, password: string, displayNa
 }
 
 export async function signInWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: getAuthRedirectUrl("/dashboard"),
-      skipBrowserRedirect: false,
-    },
+  const result = await lovable.auth.signInWithOAuth("google", {
+    redirect_uri: getAuthRedirectUrl("/auth/callback"),
   });
-  if (error) throw error;
+  if (result.error) throw new Error(result.error.message ?? "Google sign-in failed");
+  if (result.redirected) return;
+  // Tokens returned directly — refresh session cache.
+  const { data } = await supabase.auth.getSession();
+  if (data.session) applySession(data.session);
 }
 
 export async function signOut() {

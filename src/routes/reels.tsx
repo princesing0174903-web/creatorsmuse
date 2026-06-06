@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Upload, Film, X, Sparkles, Loader2, Scissors, Brain, Wand2, Gauge,
-  Flame, TrendingUp, Heart, Crosshair, Copy, Check, Play, Radio, Eye,
+  Flame, TrendingUp, Heart, Crosshair, Copy, Check, Play, Radio, Eye, Rocket,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ function ReelsPage() {
   const [reels, setReels] = useState<GeneratedReel[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const runReels = useServerFn(generateReels);
+  const lastTopic = useRef("");
 
   const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -65,6 +67,7 @@ function ReelsPage() {
     setLoading(true);
     setReels(null);
     try {
+      lastTopic.current = topic.trim() || `Video: ${file?.name ?? "untitled"}`;
       const r = await runReels({
         data: {
           topic: topic.trim() || `Video: ${file?.name ?? "untitled"}`,
@@ -200,7 +203,7 @@ function ReelsPage() {
                   </span>
                 </div>
                 {reels.map((r, i) => (
-                  <ReelCard key={i} reel={r} index={i} />
+                  <ReelCard key={i} reel={r} index={i} topic={lastTopic.current} />
                 ))}
               </div>
             )}

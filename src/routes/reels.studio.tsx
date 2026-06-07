@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {
   ArrowLeft, Sparkles, Loader2, Wand2, Copy, Check, Download, Film,
   Music2, Hash, MessageSquare, Send, Flame, ImageIcon, RefreshCw,
-  ExternalLink, Lock,
+  ExternalLink, Lock, Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -198,6 +198,7 @@ function ReelStudioPage() {
             candidate={candidate}
             onPatch={(p) => setProduction((prev) => (prev ? { ...prev, ...p } : prev))}
           />
+          <ExportPanel production={production} cover={cover} candidate={candidate} />
           <PublishHub production={production} cover={cover} candidate={candidate} />
         </section>
 
@@ -511,6 +512,358 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 
 /* ------------------------------------------------------------------ */
 /* Publish Hub                                                          */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Export Panel — render storyboard to a real downloadable MP4/WebM    */
+/* ------------------------------------------------------------------ */
+
+function pickRecorderMime(): { mime: string; ext: "mp4" | "webm" } {
+  if (typeof MediaRecorder === "undefined") return { mime: "", ext: "webm" };
+  const candidates: { mime: string; ext: "mp4" | "webm" }[] = [
+    { mime: "video/mp4;codecs=avc1.42E01E", ext: "mp4" },
+    { mime: "video/mp4", ext: "mp4" },
+    { mime: "video/webm;codecs=vp9", ext: "webm" },
+    { mime: "video/webm;codecs=vp8", ext: "webm" },
+    { mime: "video/webm", ext: "webm" },
+  ];
+  for (const c of candidates) {
+    if (MediaRecorder.isTypeSupported(c.mime)) return c;
+  }
+  return { mime: "", ext: "webm" };
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+async function renderReelToBlob(
+  production: ReelProduction,
+  coverDataUrl: string | null,
+  onProgress: (pct: number) => void,
+): Promise<{ blob: Blob; ext: "mp4" | "webm" }> {
+  const W = 720;
+  const H = 1280;
+  const FPS = 30;
+
+  // Normalize scene timings → cumulative seconds starting from 0
+  const durations = production.scenes.map((s) =>
+    Math.max(1.5, Math.min(10, s.endSec - s.startSec || 3)),
+  );
+  const total = durations.reduce((a, b) => a + b, 0);
+  const starts: number[] = [];
+  durations.reduce((acc, d, i) => {
+    starts[i] = acc;
+    return acc + d;
+  }, 0);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
+
+  let coverImg: HTMLImageElement | null = null;
+  if (coverDataUrl) {
+    coverImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = coverDataUrl;
+    }).catch(() => null);
+  }
+
+  const stream = (canvas as HTMLCanvasElement).captureStream(FPS);
+  const { mime, ext } = pickRecorderMime();
+  if (typeof MediaRecorder === "undefined") {
+    throw new Error("MediaRecorder not supported in this browser");
+  }
+  const recorder = mime
+    ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 })
+    : new MediaRecorder(stream, { videoBitsPerSecond: 4_000_000 });
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+
+  const done = new Promise<Blob>((resolve) => {
+    recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || "video/webm" }));
+  });
+
+  recorder.start(100);
+
+  const startMs = performance.now();
+  const drawFrame = (tSec: number) => {
+    // background
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#0b0b10");
+    grad.addColorStop(1, "#020205");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    if (coverImg) {
+      // Ken Burns: slow zoom + drift
+      const k = tSec / Math.max(0.001, total);
+      const scale = 1.05 + k * 0.15;
+      const dx = (k - 0.5) * 40;
+      const cw = W * scale;
+      const ch = H * scale;
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(coverImg, (W - cw) / 2 + dx, (H - ch) / 2, cw, ch);
+      ctx.globalAlpha = 1;
+      // bottom darken for text legibility
+      const od = ctx.createLinearGradient(0, H * 0.35, 0, H);
+      od.addColorStop(0, "rgba(0,0,0,0)");
+      od.addColorStop(1, "rgba(0,0,0,0.85)");
+      ctx.fillStyle = od;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // find active scene
+    let i = production.scenes.length - 1;
+    for (let s = 0; s < production.scenes.length; s++) {
+      if (tSec >= starts[s] && tSec < starts[s] + durations[s]) {
+        i = s;
+        break;
+      }
+    }
+    const scene = production.scenes[i];
+    const sceneT = tSec - starts[i];
+    const sceneD = durations[i];
+
+    // scene index chip
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fillRect(40, 60, 110, 44);
+    ctx.fillStyle = "#a78bfa";
+    ctx.font = "700 18px ui-sans-serif, system-ui, -apple-system";
+    ctx.fillText(`SCENE ${String(scene.index).padStart(2, "0")}`, 56, 90);
+
+    // hook (top) — always visible
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "800 36px ui-sans-serif, system-ui";
+    const hookLines = wrapText(ctx, production.hook, W - 80);
+    hookLines.slice(0, 3).forEach((ln, idx) => ctx.fillText(ln, 40, 170 + idx * 44));
+
+    // big on-screen text with fade in/out
+    const fade = Math.min(1, sceneT / 0.4) * Math.min(1, (sceneD - sceneT) / 0.4);
+    ctx.globalAlpha = Math.max(0, fade);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 64px ui-sans-serif, system-ui";
+    const lines = wrapText(ctx, scene.onScreenText, W - 80);
+    const lh = 78;
+    const blockH = lines.length * lh;
+    const yStart = H / 2 - blockH / 2 + 40;
+    lines.forEach((ln, idx) => {
+      ctx.fillText(ln, 40, yStart + idx * lh);
+    });
+    ctx.globalAlpha = 1;
+
+    // voiceover caption
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "italic 500 26px ui-sans-serif, system-ui";
+    const vo = wrapText(ctx, `"${scene.voiceover}"`, W - 80);
+    vo.slice(0, 3).forEach((ln, idx) => ctx.fillText(ln, 40, H - 220 + idx * 34));
+
+    // CTA bar
+    ctx.fillStyle = "#a78bfa";
+    ctx.fillRect(40, H - 110, W - 80, 70);
+    ctx.fillStyle = "#0b0b10";
+    ctx.font = "800 28px ui-sans-serif, system-ui";
+    const cta = production.cta.length > 38 ? production.cta.slice(0, 36) + "…" : production.cta;
+    const ctaW = ctx.measureText(cta).width;
+    ctx.fillText(cta, (W - ctaW) / 2, H - 65);
+
+    // progress bar
+    ctx.fillStyle = "rgba(255,255,255,0.15)";
+    ctx.fillRect(40, 40, W - 80, 6);
+    ctx.fillStyle = "#a78bfa";
+    ctx.fillRect(40, 40, ((W - 80) * tSec) / total, 6);
+  };
+
+  await new Promise<void>((resolve) => {
+    const frameInterval = 1000 / FPS;
+    let last = performance.now();
+    const tick = () => {
+      const now = performance.now();
+      const elapsed = (now - startMs) / 1000;
+      if (now - last >= frameInterval - 2) {
+        drawFrame(Math.min(elapsed, total));
+        last = now;
+        onProgress(Math.min(1, elapsed / total));
+      }
+      if (elapsed < total) {
+        requestAnimationFrame(tick);
+      } else {
+        // small tail so recorder flushes
+        setTimeout(() => {
+          recorder.stop();
+          resolve();
+        }, 200);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+
+  const blob = await done;
+  stream.getTracks().forEach((t) => t.stop());
+  return { blob, ext };
+}
+
+function ExportPanel({
+  production, cover, candidate,
+}: {
+  production: ReelProduction | null;
+  cover: string | null;
+  candidate: ReelCandidate;
+}) {
+  const [rendering, setRendering] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [ext, setExt] = useState<"mp4" | "webm">("mp4");
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // Reset preview if production changes
+    setVideoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setProgress(0);
+  }, [production?.title, production?.hook]);
+
+  useEffect(() => () => {
+    if (videoUrl) URL.revokeObjectURL(videoUrl);
+  }, [videoUrl]);
+
+  if (!production) return null;
+
+  const slug = candidate.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 60) || "reel";
+
+  const renderVideo = async () => {
+    setRendering(true);
+    setProgress(0);
+    try {
+      const { blob, ext: e } = await renderReelToBlob(production, cover, setProgress);
+      const url = URL.createObjectURL(blob);
+      setExt(e);
+      setVideoUrl(url);
+      toast.success(`Reel rendered (${(blob.size / (1024 * 1024)).toFixed(1)} MB)`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Render failed");
+    } finally {
+      setRendering(false);
+    }
+  };
+
+  const downloadVideo = () => {
+    if (!videoUrl) return;
+    const a = document.createElement("a");
+    a.href = videoUrl;
+    a.download = `${slug}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const downloadThumb = () => {
+    if (!cover) return;
+    const a = document.createElement("a");
+    a.href = cover;
+    a.download = `${slug}-thumbnail.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card/40 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+          <Film className="size-3" /> Preview & Export
+        </h3>
+        <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+          1080×1920 · 30fps
+        </span>
+      </div>
+
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 sm:col-span-5">
+          <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl border border-border bg-black">
+            {videoUrl ? (
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                controls
+                playsInline
+                className="size-full object-cover"
+              />
+            ) : (
+              <div className="flex size-full flex-col items-center justify-center gap-2 p-4 text-center">
+                {rendering ? (
+                  <>
+                    <Loader2 className="size-6 animate-spin text-primary" />
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Rendering {Math.round(progress * 100)}%
+                    </p>
+                    <div className="h-1 w-3/4 overflow-hidden rounded-full bg-muted/40">
+                      <div className="h-full bg-primary transition-[width]" style={{ width: `${progress * 100}%` }} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-7 text-primary" />
+                    <p className="text-xs text-muted-foreground">Render to see a live preview</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="col-span-12 space-y-2 sm:col-span-7">
+          <button
+            onClick={renderVideo}
+            disabled={rendering}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {rendering ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+            {rendering ? `Rendering ${Math.round(progress * 100)}%` : videoUrl ? "Re-render reel" : "Render reel video"}
+          </button>
+          <button
+            onClick={downloadVideo}
+            disabled={!videoUrl}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Download className="size-4" /> Download {ext.toUpperCase()}
+          </button>
+          <button
+            onClick={downloadThumb}
+            disabled={!cover}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-secondary/40 text-xs font-bold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ImageIcon className="size-4" /> Download thumbnail PNG
+          </button>
+          <p className="rounded-md border border-border/60 bg-background/40 p-2 text-[10px] leading-relaxed text-muted-foreground">
+            Renders a 9:16 reel from your storyboard, hook & CTA — fully in your browser, no upload required.
+            MP4 is used when your browser supports it (Chrome/Edge), otherwise high-quality WebM.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 
 type Platform = {

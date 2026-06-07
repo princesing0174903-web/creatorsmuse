@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {
   ArrowLeft, Sparkles, Loader2, Wand2, Copy, Check, Download, Film,
   Music2, Hash, MessageSquare, Send, Flame, ImageIcon, RefreshCw,
-  ExternalLink, Lock, Play,
+  ExternalLink, Lock, Play, Pause, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";

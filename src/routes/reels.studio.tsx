@@ -722,17 +722,22 @@ async function renderReelToBlob(
 }
 
 function ExportPanel({
-  production, cover, candidate,
+  production, cover, candidate, onPatch,
 }: {
   production: ReelProduction | null;
   cover: string | null;
   candidate: ReelCandidate;
+  onPatch: (p: Partial<ReelProduction>) => void;
 }) {
   const [rendering, setRendering] = useState(false);
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [ext, setExt] = useState<"mp4" | "webm">("mp4");
+  const [playing, setPlaying] = useState(false);
+  const [autoEditing, setAutoEditing] = useState(false);
+  const autoRenderedRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const runRefine = useServerFn(refineReel);
 
   useEffect(() => {
     // Reset preview if production changes
@@ -741,17 +746,17 @@ function ExportPanel({
       return null;
     });
     setProgress(0);
+    setPlaying(false);
   }, [production?.title, production?.hook]);
 
   useEffect(() => () => {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
   }, [videoUrl]);
 
-  if (!production) return null;
+  const slug = (candidate.title || "reel").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 60) || "reel";
 
-  const slug = candidate.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 60) || "reel";
-
-  const renderVideo = async () => {
+  const renderVideo = useCallback(async () => {
+    if (!production) return;
     setRendering(true);
     setProgress(0);
     try {
@@ -759,13 +764,72 @@ function ExportPanel({
       const url = URL.createObjectURL(blob);
       setExt(e);
       setVideoUrl(url);
-      toast.success(`Reel rendered (${(blob.size / (1024 * 1024)).toFixed(1)} MB)`);
+      toast.success(`Reel ready · ${(blob.size / (1024 * 1024)).toFixed(1)} MB`);
+      // Auto-play once mounted
+      requestAnimationFrame(() => {
+        const v = videoRef.current;
+        if (v) {
+          v.muted = true;
+          v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+        }
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Render failed");
     } finally {
       setRendering(false);
     }
+  }, [production, cover]);
+
+  // 🚀 Auto-render the first time a production lands so the reel actually plays
+  useEffect(() => {
+    if (!production) return;
+    const key = `${production.title}::${production.hook}`;
+    if (autoRenderedRef.current === key) return;
+    if (rendering || videoUrl) return;
+    autoRenderedRef.current = key;
+    void renderVideo();
+  }, [production, rendering, videoUrl, renderVideo]);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      v.pause();
+      setPlaying(false);
+    }
   };
+
+  const autoEdit = async () => {
+    if (!production || autoEditing || rendering) return;
+    setAutoEditing(true);
+    try {
+      const { patch } = await runRefine({
+        data: {
+          production,
+          userMessage:
+            "Auto-polish this reel for maximum virality. Tighten the hook to <8 words with a pattern interrupt, sharpen on-screen text in every scene, make the CTA punchier, and refresh hashtags with a balanced mix of broad + niche tags. Keep the topic and intent unchanged.",
+          history: [],
+        },
+      });
+      if (patch && Object.keys(patch).length > 0) {
+        onPatch(patch);
+        toast.success("AI polished your reel — re-rendering");
+      } else {
+        toast.message("Reel already looks tight — re-rendering");
+        // Force a re-render even with no patch
+        autoRenderedRef.current = null;
+        void renderVideo();
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Auto-edit failed");
+    } finally {
+      setAutoEditing(false);
+    }
+  };
+
+  if (!production) return null;
 
   const downloadVideo = () => {
     if (!videoUrl) return;
@@ -791,7 +855,7 @@ function ExportPanel({
     <div className="rounded-2xl border border-border bg-card/40 p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
-          <Film className="size-3" /> Preview & Export
+          <Film className="size-3" /> Player & Export
         </h3>
         <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
           1080×1920 · 30fps
@@ -800,50 +864,100 @@ function ExportPanel({
 
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 sm:col-span-5">
-          <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl border border-border bg-black">
+          <div className="group relative aspect-[9/16] w-full overflow-hidden rounded-xl border border-border bg-black">
             {videoUrl ? (
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                controls
-                playsInline
-                className="size-full object-cover"
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  playsInline
+                  loop
+                  muted
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  className="size-full object-cover"
+                />
+                {!playing && (
+                  <button
+                    type="button"
+                    onClick={togglePlay}
+                    className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity hover:bg-black/40"
+                    aria-label="Play reel"
+                  >
+                    <span className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow ring-4 ring-primary/30">
+                      <Play className="size-7 translate-x-0.5 fill-current" />
+                    </span>
+                  </button>
+                )}
+              </>
             ) : (
               <div className="flex size-full flex-col items-center justify-center gap-2 p-4 text-center">
                 {rendering ? (
                   <>
                     <Loader2 className="size-6 animate-spin text-primary" />
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Rendering {Math.round(progress * 100)}%
+                      Auto-rendering {Math.round(progress * 100)}%
                     </p>
                     <div className="h-1 w-3/4 overflow-hidden rounded-full bg-muted/40">
                       <div className="h-full bg-primary transition-[width]" style={{ width: `${progress * 100}%` }} />
                     </div>
                   </>
                 ) : (
-                  <>
-                    <Play className="size-7 text-primary" />
-                    <p className="text-xs text-muted-foreground">Render to see a live preview</p>
-                  </>
+                  <button
+                    type="button"
+                    onClick={renderVideo}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <span className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow ring-4 ring-primary/30">
+                      <Play className="size-7 translate-x-0.5 fill-current" />
+                    </span>
+                    <span className="text-xs text-muted-foreground">Tap to play your reel</span>
+                  </button>
                 )}
               </div>
             )}
           </div>
+          {videoUrl && (
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={togglePlay}
+                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-secondary/50 text-xs font-semibold transition-colors hover:bg-secondary"
+              >
+                {playing ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
+                {playing ? "Pause" : "Play"}
+              </button>
+              <button
+                onClick={() => { const v = videoRef.current; if (v) { v.currentTime = 0; v.play(); } }}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-secondary/50 px-3 text-xs font-semibold transition-colors hover:bg-secondary"
+                title="Restart"
+              >
+                <RefreshCw className="size-3.5" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="col-span-12 space-y-2 sm:col-span-7">
           <button
+            onClick={autoEdit}
+            disabled={autoEditing || rendering}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary via-primary to-primary/80 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {autoEditing ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+            {autoEditing ? "AI auto-editing…" : "AI Auto-Edit & polish"}
+          </button>
+          <button
             onClick={renderVideo}
             disabled={rendering}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {rendering ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            {rendering ? `Rendering ${Math.round(progress * 100)}%` : videoUrl ? "Re-render reel" : "Render reel video"}
+            {rendering ? `Rendering ${Math.round(progress * 100)}%` : videoUrl ? "Re-render reel" : "Render reel"}
           </button>
           <button
             onClick={downloadVideo}
             disabled={!videoUrl}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-secondary/40 text-xs font-bold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Download className="size-4" /> Download {ext.toUpperCase()}
           </button>
@@ -855,8 +969,8 @@ function ExportPanel({
             <ImageIcon className="size-4" /> Download thumbnail PNG
           </button>
           <p className="rounded-md border border-border/60 bg-background/40 p-2 text-[10px] leading-relaxed text-muted-foreground">
-            Renders a 9:16 reel from your storyboard, hook & CTA — fully in your browser, no upload required.
-            MP4 is used when your browser supports it (Chrome/Edge), otherwise high-quality WebM.
+            Plays your reel in 9:16, rendered live in your browser. <span className="text-primary">Auto-Edit</span> sends the
+            reel to an AI director that polishes the hook, scenes, CTA and hashtags — then re-renders automatically.
           </p>
         </div>
       </div>

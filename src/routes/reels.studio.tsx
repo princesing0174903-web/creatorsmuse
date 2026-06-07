@@ -198,7 +198,12 @@ function ReelStudioPage() {
             candidate={candidate}
             onPatch={(p) => setProduction((prev) => (prev ? { ...prev, ...p } : prev))}
           />
-          <ExportPanel production={production} cover={cover} candidate={candidate} />
+          <ExportPanel
+            production={production}
+            cover={cover}
+            candidate={candidate}
+            onPatch={(p) => setProduction((prev) => (prev ? { ...prev, ...p } : prev))}
+          />
           <PublishHub production={production} cover={cover} candidate={candidate} />
         </section>
 

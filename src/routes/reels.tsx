@@ -339,21 +339,6 @@ function ReelsPage() {
 
         {/* MAIN PANEL */}
         <main className="relative flex flex-1 flex-col overflow-hidden bg-black">
-          {/* Hidden source video element (single instance, ref used everywhere) */}
-          <video
-            ref={videoRef}
-            src={videoUrl ?? undefined}
-            muted={muted}
-            playsInline
-            loop={false}
-            preload="metadata"
-            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-            onTimeUpdate={onTimeUpdate}
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            className="hidden"
-          />
-
           {!reels && !loading && <EmptyState hasFile={!!file} />}
           {loading && <LoadingState />}
 
@@ -384,11 +369,31 @@ function ReelsPage() {
                     {/* Screen */}
                     <div className="relative h-full w-full overflow-hidden rounded-[34px] bg-black">
                       {videoUrl ? (
-                        <PhoneVideo
-                          videoRef={videoRef}
-                          playing={playing}
-                          togglePlay={togglePlay}
-                        />
+                        <>
+                          <video
+                            ref={videoRef}
+                            src={videoUrl}
+                            muted={muted}
+                            playsInline
+                            preload="metadata"
+                            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+                            onTimeUpdate={onTimeUpdate}
+                            onPlay={() => setPlaying(true)}
+                            onPause={() => setPlaying(false)}
+                            onClick={togglePlay}
+                            className="h-full w-full object-cover"
+                          />
+                          {!playing && (
+                            <button
+                              onClick={togglePlay}
+                              className="absolute inset-0 z-10 flex items-center justify-center bg-black/30"
+                            >
+                              <span className="flex size-14 items-center justify-center rounded-full bg-white/90 text-black backdrop-blur-md">
+                                <Play className="size-6 fill-current" />
+                              </span>
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center">
                           <Film className="size-7 text-white/30" />
@@ -491,54 +496,6 @@ function ReelsPage() {
         </main>
       </div>
     </AppShell>
-  );
-}
-
-function PhoneVideo({ videoRef, playing, togglePlay }: {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  playing: boolean;
-  togglePlay: () => void;
-}) {
-  // Mirror the off-screen <video> visually inside the phone using a sibling element.
-  // Trick: we use a second <video> bound to the same srcObject via captureStream so audio
-  // continues from the source. Simpler: place the SAME video here visually. We'll render
-  // a fresh video tag synced via the ref's src and currentTime.
-  // To keep state simple, we render the source video DIRECTLY inside the phone instead.
-  return (
-    <SyncedVideo videoRef={videoRef} playing={playing} togglePlay={togglePlay} />
-  );
-}
-
-function SyncedVideo({ videoRef, playing, togglePlay }: {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  playing: boolean;
-  togglePlay: () => void;
-}) {
-  // Move the source video into the phone screen via portal-like ref attachment.
-  // We re-parent the existing element to keep one source of truth.
-  const slotRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const slot = slotRef.current;
-    const v = videoRef.current;
-    if (!slot || !v) return;
-    v.classList.remove("hidden");
-    v.className = "h-full w-full object-cover";
-    slot.appendChild(v);
-    return () => {
-      // Hide on unmount (when leaving the page)
-      v.className = "hidden";
-    };
-  }, [videoRef]);
-  return (
-    <div ref={slotRef} className="absolute inset-0" onClick={togglePlay}>
-      {!playing && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/30">
-          <div className="flex size-14 items-center justify-center rounded-full bg-white/90 text-black backdrop-blur-md">
-            <Play className="size-6 fill-current" />
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 

@@ -565,6 +565,50 @@ function ReelsPage() {
                     </div>
                   </div>
 
+                  {/* Sound + Music */}
+                  <div className="rounded-2xl border border-white/5 bg-[#0c0c0c] p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Sound</p>
+                      <button
+                        onClick={() => setMuted((m) => { const next = !m; if (videoRef.current) videoRef.current.muted = next; return next; })}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest",
+                          muted ? "bg-white/5 text-white/50" : "bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-500/30",
+                        )}
+                      >
+                        {muted ? <VolumeX className="size-3" /> : <Volume2 className="size-3" />}
+                        {muted ? "Muted" : "Video sound on"}
+                      </button>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                        <Music2 className="size-3" /> AI background music
+                      </p>
+                      <button
+                        onClick={() => setBgmOn((b) => !b)}
+                        className={cn(
+                          "rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest",
+                          bgmOn ? "bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-500/30" : "bg-white/5 text-white/50",
+                        )}
+                      >
+                        {bgmOn ? "On" : "Off"}
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Volume2 className="size-3 text-white/30" />
+                      <Slider
+                        value={[bgmVol]}
+                        onValueChange={(v) => setBgmVol(v[0] ?? 0)}
+                        min={0}
+                        max={100}
+                        step={1}
+                        disabled={!bgmOn}
+                        className="flex-1"
+                      />
+                      <span className="w-8 text-right font-mono text-[10px] tabular-nums text-white/50">{bgmVol}%</span>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={exportClip}

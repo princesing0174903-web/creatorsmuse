@@ -13,6 +13,8 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 import { generateReels, type GeneratedReel } from "@/lib/reels.functions";
+import { Music2 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 export const Route = createFileRoute("/reels")({
   beforeLoad: requireAuthBeforeLoad,
@@ -49,10 +51,109 @@ function ReelsPage() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [progress, setProgress] = useState(0); // 0..1 within reel
   const [exporting, setExporting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [bgmOn, setBgmOn] = useState(true);
+  const [bgmVol, setBgmVol] = useState(35);
+
+  // ---- Procedural background music (Web Audio API) ----
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const bgmGainRef = useRef<GainNode | null>(null);
+  const bgmStopRef = useRef<(() => void) | null>(null);
+
+  const stopBgm = useCallback(() => {
+    bgmStopRef.current?.();
+    bgmStopRef.current = null;
+  }, []);
+
+  const startBgm = useCallback(() => {
+    if (bgmStopRef.current) return;
+    const AC = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
+    if (!AC) return;
+    const ctx = audioCtxRef.current ?? new AC();
+    audioCtxRef.current = ctx;
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    const master = ctx.createGain();
+    master.gain.value = (bgmVol / 100) * 0.45;
+    master.connect(ctx.destination);
+    bgmGainRef.current = master;
+
+    // simple lofi chord loop + kick pattern
+    const tempo = 92; // bpm
+    const beat = 60 / tempo;
+    const scale = [220.0, 261.6, 329.6, 392.0, 440.0, 523.2]; // A minor pentatonic-ish
+    const chord = [164.8, 196.0, 246.9, 329.6]; // E3 G3 B3 E4
+    let step = 0;
+    let stopped = false;
+
+    const sched = () => {
+      if (stopped) return;
+      const t = ctx.currentTime;
+      // pad chord every 4 beats
+      if (step % 8 === 0) {
+        chord.forEach((f) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = "sine";
+          o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.14, t + 0.4);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + beat * 7.5);
+          o.connect(g).connect(master);
+          o.start(t);
+          o.stop(t + beat * 8);
+        });
+      }
+      // melodic pluck
+      const note = scale[(step * 3) % scale.length];
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = note;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + beat * 0.9);
+      o.connect(g).connect(master);
+      o.start(t);
+      o.stop(t + beat);
+      // kick every other beat
+      if (step % 2 === 0) {
+        const k = ctx.createOscillator();
+        const kg = ctx.createGain();
+        k.frequency.setValueAtTime(110, t);
+        k.frequency.exponentialRampToValueAtTime(40, t + 0.18);
+        kg.gain.setValueAtTime(0.5, t);
+        kg.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        k.connect(kg).connect(master);
+        k.start(t);
+        k.stop(t + 0.25);
+      }
+      step++;
+    };
+    sched();
+    const id = window.setInterval(sched, beat * 1000);
+    bgmStopRef.current = () => {
+      stopped = true;
+      window.clearInterval(id);
+      try { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2); } catch { /* noop */ }
+      window.setTimeout(() => { try { master.disconnect(); } catch { /* noop */ } }, 250);
+    };
+  }, [bgmVol]);
+
+  // Sync BGM with playback + toggles
+  useEffect(() => {
+    if (playing && bgmOn) startBgm(); else stopBgm();
+    return () => stopBgm();
+  }, [playing, bgmOn, startBgm, stopBgm]);
+
+  // Live volume updates
+  useEffect(() => {
+    if (bgmGainRef.current && audioCtxRef.current) {
+      bgmGainRef.current.gain.setTargetAtTime((bgmVol / 100) * 0.45, audioCtxRef.current.currentTime, 0.05);
+    }
+  }, [bgmVol]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -461,6 +562,50 @@ function ReelsPage() {
                         <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400" style={{ width: `${progress * 100}%` }} />
                       </div>
                       <span>{fmt(activeReel.endSec)}</span>
+                    </div>
+                  </div>
+
+                  {/* Sound + Music */}
+                  <div className="rounded-2xl border border-white/5 bg-[#0c0c0c] p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Sound</p>
+                      <button
+                        onClick={() => setMuted((m) => { const next = !m; if (videoRef.current) videoRef.current.muted = next; return next; })}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest",
+                          muted ? "bg-white/5 text-white/50" : "bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-500/30",
+                        )}
+                      >
+                        {muted ? <VolumeX className="size-3" /> : <Volume2 className="size-3" />}
+                        {muted ? "Muted" : "Video sound on"}
+                      </button>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                        <Music2 className="size-3" /> AI background music
+                      </p>
+                      <button
+                        onClick={() => setBgmOn((b) => !b)}
+                        className={cn(
+                          "rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest",
+                          bgmOn ? "bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-500/30" : "bg-white/5 text-white/50",
+                        )}
+                      >
+                        {bgmOn ? "On" : "Off"}
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Volume2 className="size-3 text-white/30" />
+                      <Slider
+                        value={[bgmVol]}
+                        onValueChange={(v) => setBgmVol(v[0] ?? 0)}
+                        min={0}
+                        max={100}
+                        step={1}
+                        disabled={!bgmOn}
+                        className="flex-1"
+                      />
+                      <span className="w-8 text-right font-mono text-[10px] tabular-nums text-white/50">{bgmVol}%</span>
                     </div>
                   </div>
 

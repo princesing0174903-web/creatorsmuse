@@ -10,7 +10,7 @@ export const Route = createFileRoute("/pricing")({
   component: PricingPage,
   head: () => ({
     meta: [
-      { title: "Pricing — Nexus" },
+      { title: "Pricing — Creator’s Muse" },
       { name: "description", content: "Free, Pro, and Creator plans for AI-powered viral content generation." },
     ],
   }),

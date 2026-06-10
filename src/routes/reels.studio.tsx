@@ -23,7 +23,7 @@ export const Route = createFileRoute("/reels/studio")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Reel Studio — Nexus" },
+      { title: "Reel Studio — Creator’s Muse" },
       {
         name: "description",
         content: "Produce, refine and publish your AI-cut reel — storyboard, captions, cover art and a built-in AI director.",

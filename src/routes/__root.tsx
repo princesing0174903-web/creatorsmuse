@@ -76,7 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Creator’s Muse — AI Growth Engine for Creators" },
       { name: "description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
-      { name: "author", content: "Nexus" },
+      { name: "author", content: "Creator’s Muse" },
       { property: "og:title", content: "Creator’s Muse — AI Growth Engine for Creators" },
       { property: "og:description", content: "Turn raw footage into viral content. Generate hooks, captions, tweet ideas, and shorts angles instantly using AI." },
       { property: "og:type", content: "website" },

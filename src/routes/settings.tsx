@@ -12,7 +12,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Settings — Nexus" },
+      { title: "Settings — Creator’s Muse" },
       { name: "description", content: "Manage your profile, preferences, and subscription." },
     ],
   }),

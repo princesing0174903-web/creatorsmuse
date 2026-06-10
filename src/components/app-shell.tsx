@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <Link to="/" className="flex items-center gap-3 p-6">
           <div className="size-6 rounded bg-primary shadow-glow" />
-          <span className="text-lg font-bold uppercase tracking-tighter">Nexus</span>
+          <span className="text-lg font-bold uppercase tracking-tighter">Creator’s Muse</span>
         </Link>
 
         <nav className="flex-1 space-y-1 px-4">

@@ -37,7 +37,7 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
   head: () => ({
     meta: [
-      { title: "Workbench — Nexus" },
+      { title: "Workbench — Creator’s Muse" },
       { name: "description", content: "Your AI creator workbench: synthesize hooks, captions, threads, and shorts ideas." },
     ],
   }),

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/workflow")({
   component: WorkflowPage,
   head: () => ({
     meta: [
-      { title: "Content Workflow — Nexus" },
+      { title: "Content Workflow — Creator’s Muse" },
       { name: "description", content: "Move every idea through Idea → Script → Reel → Post with AI assist at each stage." },
     ],
   }),

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/library")({
   component: LibraryPage,
   head: () => ({
     meta: [
-      { title: "Library — Nexus" },
+      { title: "Library — Creator’s Muse" },
       { name: "description", content: "Your saved hooks, captions, and shorts angles." },
     ],
   }),

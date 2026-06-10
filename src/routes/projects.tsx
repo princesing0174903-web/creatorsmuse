@@ -8,7 +8,7 @@ export const Route = createFileRoute("/projects")({
   component: ProjectsPage,
   head: () => ({
     meta: [
-      { title: "Projects — Nexus" },
+      { title: "Projects — Creator’s Muse" },
       { name: "description", content: "Manage your creator projects." },
     ],
   }),

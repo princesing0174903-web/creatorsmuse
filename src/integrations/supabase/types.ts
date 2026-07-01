@@ -14,6 +14,182 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_settings: {
+        Row: {
+          accent_color: string | null
+          banned_words: string[]
+          brand_name: string | null
+          created_at: string
+          keywords: string[]
+          links: Json
+          logo_url: string | null
+          metadata: Json
+          niche: string | null
+          primary_color: string | null
+          target_audience: string | null
+          tone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_color?: string | null
+          banned_words?: string[]
+          brand_name?: string | null
+          created_at?: string
+          keywords?: string[]
+          links?: Json
+          logo_url?: string | null
+          metadata?: Json
+          niche?: string | null
+          primary_color?: string | null
+          target_audience?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_color?: string | null
+          banned_words?: string[]
+          brand_name?: string | null
+          created_at?: string
+          keywords?: string[]
+          links?: Json
+          logo_url?: string | null
+          metadata?: Json
+          niche?: string | null
+          primary_color?: string | null
+          target_audience?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generations: {
+        Row: {
+          created_at: string
+          credits_used: number
+          error: string | null
+          id: string
+          input: Json
+          kind: string
+          model: string | null
+          output: Json
+          project_id: string | null
+          status: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          error?: string | null
+          id?: string
+          input?: Json
+          kind: string
+          model?: string | null
+          output?: Json
+          project_id?: string | null
+          status?: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          error?: string | null
+          id?: string
+          input?: Json
+          kind?: string
+          model?: string | null
+          output?: Json
+          project_id?: string | null
+          status?: string
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_assets: {
+        Row: {
+          archived: boolean
+          asset_type: string
+          content: string | null
+          created_at: string
+          favorite: boolean
+          generation_id: string | null
+          id: string
+          media_url: string | null
+          metadata: Json
+          project_id: string | null
+          scores: Json
+          tags: string[]
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          asset_type: string
+          content?: string | null
+          created_at?: string
+          favorite?: boolean
+          generation_id?: string | null
+          id?: string
+          media_url?: string | null
+          metadata?: Json
+          project_id?: string | null
+          scores?: Json
+          tags?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          asset_type?: string
+          content?: string | null
+          created_at?: string
+          favorite?: boolean
+          generation_id?: string | null
+          id?: string
+          media_url?: string | null
+          metadata?: Json
+          project_id?: string | null
+          scores?: Json
+          tags?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_assets_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -36,6 +212,48 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          archived: boolean
+          color: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          metadata: Json
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          type?: string
           updated_at?: string
           user_id?: string
         }
@@ -79,6 +297,164 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          default_project_id: string | null
+          email_notifications: boolean
+          marketing_emails: boolean
+          onboarding_completed: boolean
+          preferences: Json
+          product_updates: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_project_id?: string | null
+          email_notifications?: boolean
+          marketing_emails?: boolean
+          onboarding_completed?: boolean
+          preferences?: Json
+          product_updates?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_project_id?: string | null
+          email_notifications?: boolean
+          marketing_emails?: boolean
+          onboarding_completed?: boolean
+          preferences?: Json
+          product_updates?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_default_project_id_fkey"
+            columns: ["default_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_cards: {
+        Row: {
+          created_at: string
+          id: string
+          linked_asset_id: string | null
+          linked_generation_id: string | null
+          metadata: Json
+          notes: string | null
+          position: number
+          stage: string
+          title: string
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          linked_asset_id?: string | null
+          linked_generation_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          position?: number
+          stage?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          linked_asset_id?: string | null
+          linked_generation_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          position?: number
+          stage?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_cards_linked_asset_id_fkey"
+            columns: ["linked_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_cards_linked_generation_id_fkey"
+            columns: ["linked_generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_cards_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          project_id: string | null
+          stages: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          project_id?: string | null
+          stages?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          project_id?: string | null
+          stages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

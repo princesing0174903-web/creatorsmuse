@@ -220,39 +220,66 @@ export type Database = {
       projects: {
         Row: {
           archived: boolean
+          category: string | null
           color: string
           created_at: string
           description: string | null
+          estimated_completion: string | null
+          favorite: boolean
           icon: string | null
           id: string
           metadata: Json
           name: string
+          platform: string
+          priority: string
+          progress: number
+          status: string
+          tags: string[]
+          thumbnail_url: string | null
           type: string
           updated_at: string
           user_id: string
         }
         Insert: {
           archived?: boolean
+          category?: string | null
           color?: string
           created_at?: string
           description?: string | null
+          estimated_completion?: string | null
+          favorite?: boolean
           icon?: string | null
           id?: string
           metadata?: Json
           name: string
+          platform?: string
+          priority?: string
+          progress?: number
+          status?: string
+          tags?: string[]
+          thumbnail_url?: string | null
           type?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           archived?: boolean
+          category?: string | null
           color?: string
           created_at?: string
           description?: string | null
+          estimated_completion?: string | null
+          favorite?: boolean
           icon?: string | null
           id?: string
           metadata?: Json
           name?: string
+          platform?: string
+          priority?: string
+          progress?: number
+          status?: string
+          tags?: string[]
+          thumbnail_url?: string | null
           type?: string
           updated_at?: string
           user_id?: string

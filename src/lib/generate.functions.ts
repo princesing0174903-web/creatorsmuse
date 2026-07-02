@@ -6,6 +6,8 @@ import { consumeCredit } from "./usage.server";
 const InputSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
   fileName: z.string().trim().max(300).optional(),
+  projectId: z.string().uuid().nullish(),
+  parentId: z.string().uuid().nullish(),
 });
 
 const ScoredItem = z.object({
@@ -27,6 +29,10 @@ const OutputSchema = z.object({
 
 export type ScoredAsset = z.infer<typeof ScoredItem>;
 export type GeneratedAssets = z.infer<typeof OutputSchema>;
+export type GenerateResult = {
+  generationId: string;
+  assets: GeneratedAssets;
+};
 
 const SYSTEM_PROMPT = `You are a senior short-form content strategist for top creators (YouTube Shorts, TikTok, Reels, X/Twitter).
 Given a topic + optional video filename context, produce platform-ready, niche-specific assets.
@@ -51,10 +57,19 @@ Scoring (per item, integers 0-100, be discriminating — do NOT cluster everythi
 Spread scores realistically: a flat list with one 92, one 88, one 74, one 61, one 48 is more useful than five 90s.
 `;
 
+const MODEL_ID = "openai/gpt-5-mini";
+
+const KIND_TO_ASSET_TYPE = {
+  hooks: "hook",
+  captions: "caption",
+  posts: "post",
+  shorts: "short",
+} as const;
+
 export const generateAssets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data, context }): Promise<GeneratedAssets> => {
+  .handler(async ({ data, context }): Promise<GenerateResult> => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -72,7 +87,7 @@ export const generateAssets = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: MODEL_ID,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -128,5 +143,83 @@ export const generateAssets = createServerFn({ method: "POST" })
     const argsRaw = json?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!argsRaw) throw new Error("AI returned no structured output");
     const parsed = OutputSchema.parse(JSON.parse(argsRaw));
-    return parsed;
+
+    // --- Persistence: save the generation + expand into library assets. ---
+    const { supabase, userId } = context;
+    const projectId = data.projectId ?? null;
+
+    const { data: gen, error: genErr } = await supabase
+      .from("generations")
+      .insert({
+        user_id: userId,
+        project_id: projectId,
+        kind: "assets",
+        topic: data.topic,
+        input: { topic: data.topic, fileName: data.fileName ?? null },
+        output: parsed as unknown as Record<string, unknown>,
+        model: MODEL_ID,
+        status: "complete",
+        credits_used: 1,
+        parent_id: data.parentId ?? null,
+      })
+      .select("id")
+      .single();
+    if (genErr) {
+      console.error("Failed to persist generation:", genErr);
+      throw new Error("Generation succeeded but persistence failed");
+    }
+
+    // Expand each item into a library_asset row for searchability.
+    const rows: Array<{
+      user_id: string;
+      project_id: string | null;
+      generation_id: string;
+      asset_type: string;
+      content: string;
+      title: string | null;
+      scores: Record<string, number>;
+      tags: string[];
+      metadata: Record<string, unknown>;
+    }> = [];
+    for (const key of ["hooks", "captions", "posts", "shorts"] as const) {
+      for (const item of parsed[key]) {
+        rows.push({
+          user_id: userId,
+          project_id: projectId,
+          generation_id: gen.id,
+          asset_type: KIND_TO_ASSET_TYPE[key],
+          content: item.text,
+          title: null,
+          scores: {
+            virality: item.virality,
+            engagement: item.engagement,
+            emotion: item.emotion,
+            hookStrength: item.hookStrength,
+            trendAlignment: item.trendAlignment,
+            audienceRetention: item.audienceRetention,
+          },
+          tags: [],
+          metadata: { topic: data.topic, source: "workbench" },
+        });
+      }
+    }
+    if (rows.length) {
+      const { error: libErr } = await supabase.from("library_assets").insert(rows);
+      if (libErr) console.error("Library expansion failed (non-fatal):", libErr);
+    }
+
+    // Update preferences: last-selected project + recent prompt (best-effort).
+    await supabase.from("user_preferences").upsert(
+      {
+        user_id: userId,
+        preferences: {
+          last_project_id: projectId,
+          last_topic: data.topic,
+          last_generated_at: new Date().toISOString(),
+        },
+      },
+      { onConflict: "user_id" },
+    );
+
+    return { generationId: gen.id, assets: parsed };
   });

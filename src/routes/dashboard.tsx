@@ -78,7 +78,7 @@ function DashboardPage() {
   // Load initial preferences (last project + last topic).
   useEffect(() => {
     let cancelled = false;
-    prefsFn({ data: {} }).then((p) => {
+    prefsFn().then((p) => {
       if (cancelled) return;
       if (p.lastProjectId) setProjectId(p.lastProjectId);
       if (p.lastTopic && !topic) setTopic(p.lastTopic);

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 import { consumeCredit } from "./usage.server";
 
 const InputSchema = z.object({
@@ -155,8 +156,8 @@ export const generateAssets = createServerFn({ method: "POST" })
         project_id: projectId,
         kind: "assets",
         topic: data.topic,
-        input: { topic: data.topic, fileName: data.fileName ?? null },
-        output: parsed as unknown as Record<string, unknown>,
+        input: { topic: data.topic, fileName: data.fileName ?? null } as Json,
+        output: parsed as unknown as Json,
         model: MODEL_ID,
         status: "complete",
         credits_used: 1,
@@ -170,17 +171,18 @@ export const generateAssets = createServerFn({ method: "POST" })
     }
 
     // Expand each item into a library_asset row for searchability.
-    const rows: Array<{
+    type LibRow = {
       user_id: string;
       project_id: string | null;
       generation_id: string;
       asset_type: string;
       content: string;
       title: string | null;
-      scores: Record<string, number>;
+      scores: Json;
       tags: string[];
-      metadata: Record<string, unknown>;
-    }> = [];
+      metadata: Json;
+    };
+    const rows: LibRow[] = [];
     for (const key of ["hooks", "captions", "posts", "shorts"] as const) {
       for (const item of parsed[key]) {
         rows.push({
@@ -197,9 +199,9 @@ export const generateAssets = createServerFn({ method: "POST" })
             hookStrength: item.hookStrength,
             trendAlignment: item.trendAlignment,
             audienceRetention: item.audienceRetention,
-          },
+          } as Json,
           tags: [],
-          metadata: { topic: data.topic, source: "workbench" },
+          metadata: { topic: data.topic, source: "workbench" } as Json,
         });
       }
     }

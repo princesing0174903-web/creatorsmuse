@@ -75,6 +75,7 @@ export type Database = {
           kind: string
           model: string | null
           output: Json
+          parent_id: string | null
           project_id: string | null
           status: string
           topic: string | null
@@ -90,6 +91,7 @@ export type Database = {
           kind: string
           model?: string | null
           output?: Json
+          parent_id?: string | null
           project_id?: string | null
           status?: string
           topic?: string | null
@@ -105,6 +107,7 @@ export type Database = {
           kind?: string
           model?: string | null
           output?: Json
+          parent_id?: string | null
           project_id?: string | null
           status?: string
           topic?: string | null
@@ -112,6 +115,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "generations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "generations_project_id_fkey"
             columns: ["project_id"]

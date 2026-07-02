@@ -4,6 +4,7 @@ import {
   Suspense,
   lazy,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -18,10 +19,21 @@ import {
   X,
   AlertTriangle,
   RotateCcw,
+  History,
+  FolderOpen,
+  Trash2,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
+import {
+  listMyGenerations,
+  getGeneration,
+  deleteGeneration,
+  getWorkbenchPrefs,
+} from "@/lib/workbench.functions";
+import { listMyProjects } from "@/lib/projects.functions";
 import { cn } from "@/lib/utils";
 import { AuthScreen } from "@/components/auth-screen";
 import { AppShell } from "@/components/app-shell";
@@ -49,11 +61,50 @@ function DashboardPage() {
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GeneratedAssets | null>(null);
+  const [currentGenId, setCurrentGenId] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const generateFn = useServerFn(generateAssets);
+  const listGensFn = useServerFn(listMyGenerations);
+  const getGenFn = useServerFn(getGeneration);
+  const deleteGenFn = useServerFn(deleteGeneration);
+  const listProjectsFn = useServerFn(listMyProjects);
+  const prefsFn = useServerFn(getWorkbenchPrefs);
+  const qc = useQueryClient();
   const { plan, remaining } = usePlan();
+
+  // Load initial preferences (last project + last topic).
+  useEffect(() => {
+    let cancelled = false;
+    prefsFn().then((p) => {
+      if (cancelled) return;
+      if (p.lastProjectId) setProjectId(p.lastProjectId);
+      if (p.lastTopic && !topic) setTopic(p.lastTopic);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const projectsQ = useQuery({
+    queryKey: ["projects", "for-picker"],
+    queryFn: () => listProjectsFn({ data: { archived: "active", limit: 100, offset: 0 } }),
+  });
+
+  const historyQ = useQuery({
+    queryKey: ["generations", "recent", projectId],
+    queryFn: () => listGensFn({ data: { projectId: projectId ?? undefined, limit: 12, offset: 0 } }),
+  });
+
+  const deleteGenMut = useMutation({
+    mutationFn: (id: string) => deleteGenFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Generation removed");
+      qc.invalidateQueries({ queryKey: ["generations"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+  });
 
   const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -79,10 +130,15 @@ function DashboardPage() {
         data: {
           topic: trimmedTopic || (file ? `Video clip: ${file.name}` : ""),
           fileName: file?.name,
+          projectId: projectId ?? undefined,
         },
       });
-      setResults(r);
+      setResults(r.assets);
+      setCurrentGenId(r.generationId);
       incrementUsage(1);
+      toast.success("Saved to your library");
+      qc.invalidateQueries({ queryKey: ["generations"] });
+      qc.invalidateQueries({ queryKey: ["library"] });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generation failed";
       setError(msg);
@@ -90,7 +146,29 @@ function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [canGenerate, generateFn, trimmedTopic, file, remaining]);
+  }, [canGenerate, generateFn, trimmedTopic, file, remaining, projectId, qc]);
+
+  const loadFromHistory = useCallback(
+    async (id: string) => {
+      try {
+        const row = await getGenFn({ data: { id } });
+        if (!row) return;
+        const out = row.output as unknown as GeneratedAssets | null;
+        if (out && out.hooks && out.captions && out.posts && out.shorts) {
+          setResults(out);
+          setCurrentGenId(row.id);
+          if (row.topic) setTopic(row.topic);
+          if (row.project_id) setProjectId(row.project_id);
+          toast.success("Loaded from history");
+        } else {
+          toast.error("Generation has no viewable output");
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to load");
+      }
+    },
+    [getGenFn],
+  );
 
   return (
     <AppShell>
@@ -117,6 +195,27 @@ function DashboardPage() {
           <div className="grid grid-cols-12 gap-6">
             {/* Input column */}
             <div className="col-span-12 space-y-5 lg:col-span-5">
+              <div className="space-y-2">
+                <label className="px-1 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
+                  Project
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-card/40 px-3">
+                  <FolderOpen className="size-4 text-primary" />
+                  <select
+                    value={projectId ?? ""}
+                    onChange={(e) => setProjectId(e.target.value || null)}
+                    className="h-11 flex-1 bg-transparent text-sm outline-none"
+                  >
+                    <option value="">No project (unassigned)</option>
+                    {projectsQ.data?.rows.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="px-1 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
                   Input source
@@ -208,6 +307,11 @@ function DashboardPage() {
                   </>
                 )}
               </button>
+              {currentGenId && !loading && (
+                <p className="text-center font-mono text-[10px] uppercase tracking-widest text-primary/80">
+                  ✓ Saved · autosaved to library
+                </p>
+              )}
 
               <div className="rounded-xl border border-border bg-card/30 p-4">
                 <div className="mb-2 flex items-center gap-2 text-xs font-medium">
@@ -230,6 +334,65 @@ function DashboardPage() {
                 </Suspense>
               )}
             </div>
+          </div>
+
+          {/* History */}
+          <div className="rounded-2xl border border-border bg-card/30 p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
+                <History className="size-3 text-primary" /> Recent generations
+              </h3>
+              <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                {historyQ.data?.length ?? 0} entries
+              </span>
+            </div>
+            {historyQ.isLoading ? (
+              <div className="flex h-24 items-center justify-center text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+              </div>
+            ) : !historyQ.data || historyQ.data.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Your generation history will appear here. Every synthesis is automatically saved.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {historyQ.data.map((h) => (
+                  <div
+                    key={h.id}
+                    className={cn(
+                      "group flex items-center justify-between gap-2 rounded-lg border bg-background/40 px-3 py-2 transition-colors hover:border-primary/40",
+                      h.id === currentGenId ? "border-primary/60 bg-primary/5" : "border-border",
+                    )}
+                  >
+                    <button
+                      onClick={() => loadFromHistory(h.id)}
+                      className="flex-1 truncate text-left"
+                    >
+                      <p className="truncate text-xs font-medium">
+                        {h.topic ?? "(untitled)"}
+                      </p>
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {" · "}
+                        {h.kind}
+                      </p>
+                    </button>
+                    <button
+                      onClick={() => deleteGenMut.mutate(h.id)}
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       <UpgradeModal

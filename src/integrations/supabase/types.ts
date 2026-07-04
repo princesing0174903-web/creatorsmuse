@@ -65,54 +65,119 @@ export type Database = {
         }
         Relationships: []
       }
-      generations: {
+      generation_events: {
         Row: {
           created_at: string
-          credits_used: number
-          error: string | null
+          detail: Json
+          event: string
+          generation_id: string
           id: string
-          input: Json
-          kind: string
-          model: string | null
-          output: Json
-          parent_id: string | null
-          project_id: string | null
-          status: string
-          topic: string | null
-          updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          credits_used?: number
-          error?: string | null
+          detail?: Json
+          event: string
+          generation_id: string
           id?: string
-          input?: Json
-          kind: string
-          model?: string | null
-          output?: Json
-          parent_id?: string | null
-          project_id?: string | null
-          status?: string
-          topic?: string | null
-          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          detail?: Json
+          event?: string
+          generation_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_events_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generations: {
+        Row: {
+          attempt: number
+          cancel_requested: boolean
+          cancelled_at: string | null
+          created_at: string
+          credits_used: number
+          error: string | null
+          error_code: string | null
+          finished_at: string | null
+          id: string
+          input: Json
+          kind: string
+          max_attempts: number
+          model: string | null
+          output: Json
+          parent_id: string | null
+          progress: number
+          project_id: string | null
+          queued_at: string | null
+          started_at: string | null
+          status: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          attempt?: number
+          cancel_requested?: boolean
+          cancelled_at?: string | null
+          created_at?: string
           credits_used?: number
           error?: string | null
+          error_code?: string | null
+          finished_at?: string | null
           id?: string
           input?: Json
-          kind?: string
+          kind: string
+          max_attempts?: number
           model?: string | null
           output?: Json
           parent_id?: string | null
+          progress?: number
           project_id?: string | null
+          queued_at?: string | null
+          started_at?: string | null
+          status?: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          attempt?: number
+          cancel_requested?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          credits_used?: number
+          error?: string | null
+          error_code?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json
+          kind?: string
+          max_attempts?: number
+          model?: string | null
+          output?: Json
+          parent_id?: string | null
+          progress?: number
+          project_id?: string | null
+          queued_at?: string | null
+          started_at?: string | null
           status?: string
           topic?: string | null
           updated_at?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -339,6 +404,7 @@ export type Database = {
         Row: {
           created_at: string
           default_project_id: string | null
+          drafts: Json
           email_notifications: boolean
           marketing_emails: boolean
           onboarding_completed: boolean
@@ -351,6 +417,7 @@ export type Database = {
         Insert: {
           created_at?: string
           default_project_id?: string | null
+          drafts?: Json
           email_notifications?: boolean
           marketing_emails?: boolean
           onboarding_completed?: boolean
@@ -363,6 +430,7 @@ export type Database = {
         Update: {
           created_at?: string
           default_project_id?: string | null
+          drafts?: Json
           email_notifications?: boolean
           marketing_emails?: boolean
           onboarding_completed?: boolean

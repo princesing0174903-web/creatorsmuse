@@ -35,6 +35,8 @@ export type GenerateResult = {
   assets: GeneratedAssets;
 };
 
+export type EnqueueResult = { generationId: string };
+
 const SYSTEM_PROMPT = `You are a senior short-form content strategist for top creators (YouTube Shorts, TikTok, Reels, X/Twitter).
 Given a topic + optional video filename context, produce platform-ready, niche-specific assets.
 
@@ -67,6 +69,10 @@ const KIND_TO_ASSET_TYPE = {
   shorts: "short",
 } as const;
 
+/**
+ * Legacy synchronous path — kept for backwards compatibility.
+ * Prefer `enqueueGeneration` from jobs.functions.ts for new UI.
+ */
 export const generateAssets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
@@ -225,3 +231,150 @@ export const generateAssets = createServerFn({ method: "POST" })
 
     return { generationId: gen.id, assets: parsed };
   });
+
+// ----------------------------------------------------------------------------
+// Pipeline internals (used by jobs.functions.ts runner). Exported as plain
+// functions — NOT server functions — so they can be invoked in-process from
+// a fire-and-forget task in the enqueue handler.
+// ----------------------------------------------------------------------------
+
+export const GENERATE_MODEL_ID = MODEL_ID;
+export const GENERATE_SYSTEM_PROMPT = SYSTEM_PROMPT;
+export const GENERATE_ASSET_TYPE_MAP = KIND_TO_ASSET_TYPE;
+export { OutputSchema as GenerateOutputSchema };
+
+/**
+ * Call the AI gateway to synthesize creator assets. Pure I/O + parse — no DB.
+ * Supports abort via signal for cooperative cancellation.
+ */
+export async function callGenerateModel(
+  args: { topic: string; fileName?: string | null; signal?: AbortSignal },
+): Promise<GeneratedAssets> {
+  const apiKey = process.env.LOVABLE_API_KEY;
+  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+
+  const userPrompt = `Topic / context:\n${args.topic}${
+    args.fileName ? `\n\nUploaded video filename (for tone hints only): ${args.fileName}` : ""
+  }\n\nReturn 5 hooks, 5 captions, 5 posts, 5 shorts angles. All distinct, niche-specific.`;
+
+  const itemSchema = {
+    type: "object",
+    properties: {
+      text: { type: "string" },
+      virality: { type: "integer", minimum: 0, maximum: 100 },
+      engagement: { type: "integer", minimum: 0, maximum: 100 },
+      emotion: { type: "integer", minimum: 0, maximum: 100 },
+      hookStrength: { type: "integer", minimum: 0, maximum: 100 },
+      trendAlignment: { type: "integer", minimum: 0, maximum: 100 },
+      audienceRetention: { type: "integer", minimum: 0, maximum: 100 },
+    },
+    required: [
+      "text", "virality", "engagement", "emotion",
+      "hookStrength", "trendAlignment", "audienceRetention",
+    ],
+    additionalProperties: false,
+  };
+  const arr = { type: "array", items: itemSchema, minItems: 5, maxItems: 5 };
+
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    signal: args.signal,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "emit_assets",
+            description: "Return the 4 categories of creator assets.",
+            parameters: {
+              type: "object",
+              properties: { hooks: arr, captions: arr, posts: arr, shorts: arr },
+              required: ["hooks", "captions", "posts", "shorts"],
+              additionalProperties: false,
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "emit_assets" } },
+    }),
+  });
+
+  if (!res.ok) {
+    if (res.status === 429) {
+      const e = new Error("Rate limit hit. Please wait a moment and try again.");
+      (e as unknown as { code: string }).code = "rate_limited";
+      throw e;
+    }
+    if (res.status === 402) {
+      const e = new Error("AI credits exhausted. Add credits in Settings → Workspace → Usage.");
+      (e as unknown as { code: string }).code = "credits_exhausted";
+      throw e;
+    }
+    const text = await res.text();
+    console.error("AI gateway error:", res.status, text);
+    const e = new Error(`AI gateway error (${res.status})`);
+    (e as unknown as { code: string }).code = `gateway_${res.status}`;
+    throw e;
+  }
+
+  const json = await res.json();
+  const argsRaw = json?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!argsRaw) throw new Error("AI returned no structured output");
+  return OutputSchema.parse(JSON.parse(argsRaw));
+}
+
+/**
+ * Fan out a completed generation's items into library_assets. Idempotent-ish:
+ * caller should only invoke once per job on success.
+ */
+export function buildLibraryRows(args: {
+  userId: string;
+  projectId: string | null;
+  generationId: string;
+  topic: string;
+  assets: GeneratedAssets;
+}) {
+  const rows: Array<{
+    user_id: string;
+    project_id: string | null;
+    generation_id: string;
+    asset_type: string;
+    content: string;
+    title: string | null;
+    scores: Json;
+    tags: string[];
+    metadata: Json;
+  }> = [];
+  for (const key of ["hooks", "captions", "posts", "shorts"] as const) {
+    for (const item of args.assets[key]) {
+      rows.push({
+        user_id: args.userId,
+        project_id: args.projectId,
+        generation_id: args.generationId,
+        asset_type: KIND_TO_ASSET_TYPE[key],
+        content: item.text,
+        title: null,
+        scores: {
+          virality: item.virality,
+          engagement: item.engagement,
+          emotion: item.emotion,
+          hookStrength: item.hookStrength,
+          trendAlignment: item.trendAlignment,
+          audienceRetention: item.audienceRetention,
+        } as Json,
+        tags: [],
+        metadata: { topic: args.topic, source: "workbench" } as Json,
+      });
+    }
+  }
+  return rows;
+}

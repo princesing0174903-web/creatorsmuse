@@ -217,10 +217,14 @@ async function finalize(
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const now = new Date().toISOString();
-  const patch: Record<string, unknown> = {
-    status,
-    finished_at: now,
-  };
+  const patch: {
+    status: JobStatus;
+    finished_at: string;
+    progress?: number;
+    cancelled_at?: string;
+    error?: string;
+    error_code?: string;
+  } = { status, finished_at: now };
   if (status === "complete") patch.progress = 100;
   if (status === "cancelled") patch.cancelled_at = now;
   if (opts.error) patch.error = opts.error;
@@ -295,11 +299,17 @@ export const cancelJob = createServerFn({ method: "POST" })
       return { ok: true, status: row.status };
     }
     // Flag for cooperative cancel; if still queued, transition immediately.
-    const patch: Record<string, unknown> = { cancel_requested: true };
+    const nowIso = new Date().toISOString();
+    const patch: {
+      cancel_requested: boolean;
+      status?: JobStatus;
+      cancelled_at?: string;
+      finished_at?: string;
+    } = { cancel_requested: true };
     if (row.status === "queued") {
       patch.status = "cancelled";
-      patch.cancelled_at = new Date().toISOString();
-      patch.finished_at = new Date().toISOString();
+      patch.cancelled_at = nowIso;
+      patch.finished_at = nowIso;
     }
     const { error: updErr } = await supabase.from("generations").update(patch).eq("id", data.id);
     if (updErr) throw new Error(updErr.message);

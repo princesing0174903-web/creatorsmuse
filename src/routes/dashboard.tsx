@@ -42,7 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AuthScreen } from "@/components/auth-screen";
 import { AppShell } from "@/components/app-shell";
-import { usePlan, refreshPlan } from "@/lib/plan";
+import { usePlan, refreshUsage } from "@/lib/plan";
 import { UpgradeModal } from "@/components/upgrade-modal";
 
 const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
@@ -208,7 +208,7 @@ function DashboardPage() {
                   setCurrentGenId(row.id);
                   setActiveProgress(100);
                   toast.success("Synthesis complete");
-                  refreshPlan();
+                  refreshUsage();
                   qc.invalidateQueries({ queryKey: ["library"] });
                   return null;
                 }

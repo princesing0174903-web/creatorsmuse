@@ -26,18 +26,23 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { generateAssets, type GeneratedAssets } from "@/lib/generate.functions";
+import { type GeneratedAssets } from "@/lib/generate.functions";
 import {
-  listMyGenerations,
-  getGeneration,
-  deleteGeneration,
-  getWorkbenchPrefs,
-} from "@/lib/workbench.functions";
+  enqueueGeneration,
+  listRecentJobs,
+  getJob,
+  cancelJob,
+  retryJob,
+  saveDraft,
+  getDrafts,
+} from "@/lib/jobs.functions";
+import { deleteGeneration, getWorkbenchPrefs } from "@/lib/workbench.functions";
 import { listMyProjects } from "@/lib/projects.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AuthScreen } from "@/components/auth-screen";
 import { AppShell } from "@/components/app-shell";
-import { usePlan, incrementUsage } from "@/lib/plan";
+import { usePlan, refreshPlan } from "@/lib/plan";
 import { UpgradeModal } from "@/components/upgrade-modal";
 
 const ResultsGrid = lazy(() => import("@/components/dashboard-results"));
@@ -59,30 +64,44 @@ function DashboardPage() {
   const [topic, setTopic] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GeneratedAssets | null>(null);
   const [currentGenId, setCurrentGenId] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [activeProgress, setActiveProgress] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const generateFn = useServerFn(generateAssets);
-  const listGensFn = useServerFn(listMyGenerations);
-  const getGenFn = useServerFn(getGeneration);
+  const enqueueFn = useServerFn(enqueueGeneration);
+  const listJobsFn = useServerFn(listRecentJobs);
+  const getJobFn = useServerFn(getJob);
+  const cancelFn = useServerFn(cancelJob);
+  const retryFn = useServerFn(retryJob);
+  const saveDraftFn = useServerFn(saveDraft);
+  const getDraftsFn = useServerFn(getDrafts);
   const deleteGenFn = useServerFn(deleteGeneration);
   const listProjectsFn = useServerFn(listMyProjects);
   const prefsFn = useServerFn(getWorkbenchPrefs);
   const qc = useQueryClient();
   const { plan, remaining } = usePlan();
 
-  // Load initial preferences (last project + last topic).
+  // Load initial preferences (last project) + hydrate autosaved draft for that project.
   useEffect(() => {
     let cancelled = false;
-    prefsFn().then((p) => {
-      if (cancelled) return;
-      if (p.lastProjectId) setProjectId(p.lastProjectId);
-      if (p.lastTopic && !topic) setTopic(p.lastTopic);
-    }).catch(() => {});
+    (async () => {
+      try {
+        const [prefs, drafts] = await Promise.all([prefsFn(), getDraftsFn()]);
+        if (cancelled) return;
+        const pid = prefs.lastProjectId ?? null;
+        if (pid) setProjectId(pid);
+        const key = pid ?? "__none__";
+        const d = drafts[key];
+        if (d?.topic) setTopic(d.topic);
+        else if (prefs.lastTopic) setTopic(prefs.lastTopic);
+      } catch {
+        /* best-effort */
+      }
+    })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -93,17 +112,40 @@ function DashboardPage() {
   });
 
   const historyQ = useQuery({
-    queryKey: ["generations", "recent", projectId],
-    queryFn: () => listGensFn({ data: { projectId: projectId ?? undefined, limit: 12, offset: 0 } }),
+    queryKey: ["jobs", "recent", projectId],
+    queryFn: () => listJobsFn({ data: { projectId: projectId ?? undefined, limit: 12, offset: 0 } }),
+    refetchOnWindowFocus: true,
   });
 
   const deleteGenMut = useMutation({
     mutationFn: (id: string) => deleteGenFn({ data: { id } }),
     onSuccess: () => {
       toast.success("Generation removed");
-      qc.invalidateQueries({ queryKey: ["generations"] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+  });
+
+  const cancelMut = useMutation({
+    mutationFn: (id: string) => cancelFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Cancel requested");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Cancel failed"),
+  });
+
+  const retryMut = useMutation({
+    mutationFn: (id: string) => retryFn({ data: { id } }),
+    onSuccess: (r) => {
+      setActiveJobId(r.generationId);
+      setActiveProgress(0);
+      setResults(null);
+      setError(null);
+      toast.success("Retrying generation");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Retry failed"),
   });
 
   const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -115,6 +157,82 @@ function DashboardPage() {
 
   const trimmedTopic = useMemo(() => topic.trim(), [topic]);
   const canGenerate = !!trimmedTopic || !!file;
+  const loading = !!activeJobId;
+
+  // ------- Autosave draft (debounced) -------
+  const draftDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (draftDebounce.current) clearTimeout(draftDebounce.current);
+    draftDebounce.current = setTimeout(() => {
+      saveDraftFn({
+        data: {
+          projectId,
+          draft: { topic, fileName: file?.name ?? null },
+        },
+      }).catch(() => {});
+    }, 600);
+    return () => {
+      if (draftDebounce.current) clearTimeout(draftDebounce.current);
+    };
+  }, [topic, file, projectId, saveDraftFn]);
+
+  // ------- Realtime subscription to job updates -------
+  useEffect(() => {
+    let uid: string | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      uid = data.user?.id ?? null;
+      if (!uid) return;
+      channel = supabase
+        .channel(`gen-jobs-${uid}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "generations", filter: `user_id=eq.${uid}` },
+          (payload) => {
+            const row = (payload.new ?? payload.old) as {
+              id: string;
+              status?: string;
+              progress?: number;
+              error?: string | null;
+              output?: unknown;
+            } | null;
+            if (!row) return;
+            // Live progress for the active job.
+            setActiveJobId((cur) => {
+              if (cur && cur === row.id) {
+                if (typeof row.progress === "number") setActiveProgress(row.progress);
+                if (row.status === "complete") {
+                  const out = row.output as GeneratedAssets | null;
+                  if (out?.hooks) setResults(out);
+                  setCurrentGenId(row.id);
+                  setActiveProgress(100);
+                  toast.success("Synthesis complete");
+                  refreshPlan();
+                  qc.invalidateQueries({ queryKey: ["library"] });
+                  return null;
+                }
+                if (row.status === "failed") {
+                  setError(row.error ?? "Generation failed");
+                  toast.error(row.error ?? "Generation failed");
+                  return null;
+                }
+                if (row.status === "cancelled") {
+                  toast.message("Generation cancelled");
+                  return null;
+                }
+              }
+              return cur;
+            });
+            qc.invalidateQueries({ queryKey: ["jobs"] });
+          },
+        )
+        .subscribe();
+    })();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   const generate = useCallback(async () => {
     if (!canGenerate) return;
@@ -122,37 +240,40 @@ function DashboardPage() {
       setUpgradeOpen(true);
       return;
     }
-    setLoading(true);
     setResults(null);
     setError(null);
+    setActiveProgress(0);
     try {
-      const r = await generateFn({
+      const r = await enqueueFn({
         data: {
           topic: trimmedTopic || (file ? `Video clip: ${file.name}` : ""),
           fileName: file?.name,
-          projectId: projectId ?? undefined,
+          projectId: projectId ?? null,
         },
       });
-      setResults(r.assets);
-      setCurrentGenId(r.generationId);
-      incrementUsage(1);
-      toast.success("Saved to your library");
-      qc.invalidateQueries({ queryKey: ["generations"] });
-      qc.invalidateQueries({ queryKey: ["library"] });
+      setActiveJobId(r.generationId);
+      toast.message("Generation queued");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generation failed";
       setError(msg);
       toast.error(msg);
-    } finally {
-      setLoading(false);
     }
-  }, [canGenerate, generateFn, trimmedTopic, file, remaining, projectId, qc]);
+  }, [canGenerate, enqueueFn, trimmedTopic, file, remaining, projectId, qc]);
 
   const loadFromHistory = useCallback(
     async (id: string) => {
       try {
-        const row = await getGenFn({ data: { id } });
+        const row = await getJobFn({ data: { id } });
         if (!row) return;
+        if (row.status === "queued" || row.status === "processing") {
+          setActiveJobId(row.id);
+          setActiveProgress(row.progress ?? 0);
+          if (row.topic) setTopic(row.topic);
+          if (row.project_id) setProjectId(row.project_id);
+          toast.message("Attached to running job");
+          return;
+        }
         const out = row.output as unknown as GeneratedAssets | null;
         if (out && out.hooks && out.captions && out.posts && out.shorts) {
           setResults(out);
@@ -167,8 +288,12 @@ function DashboardPage() {
         toast.error(e instanceof Error ? e.message : "Failed to load");
       }
     },
-    [getGenFn],
+    [getJobFn],
   );
+
+  const cancelActive = useCallback(() => {
+    if (activeJobId) cancelMut.mutate(activeJobId);
+  }, [activeJobId, cancelMut]);
 
   return (
     <AppShell>
@@ -299,7 +424,7 @@ function DashboardPage() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" /> Synthesizing…
+                    <Loader2 className="size-4 animate-spin" /> Synthesizing… {activeProgress}%
                   </>
                 ) : (
                   <>
@@ -307,6 +432,22 @@ function DashboardPage() {
                   </>
                 )}
               </button>
+              {loading && (
+                <div className="space-y-2">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full bg-primary transition-all duration-500 ease-out"
+                      style={{ width: `${Math.max(4, activeProgress)}%` }}
+                    />
+                  </div>
+                  <button
+                    onClick={cancelActive}
+                    className="mx-auto flex items-center gap-1.5 rounded-md border border-border px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:border-destructive/50 hover:text-destructive"
+                  >
+                    <X className="size-3" /> Cancel generation
+                  </button>
+                </div>
+              )}
               {currentGenId && !loading && (
                 <p className="text-center font-mono text-[10px] uppercase tracking-widest text-primary/80">
                   ✓ Saved · autosaved to library
@@ -362,6 +503,7 @@ function DashboardPage() {
                     className={cn(
                       "group flex items-center justify-between gap-2 rounded-lg border bg-background/40 px-3 py-2 transition-colors hover:border-primary/40",
                       h.id === currentGenId ? "border-primary/60 bg-primary/5" : "border-border",
+                      h.id === activeJobId && "border-primary/60 bg-primary/10",
                     )}
                   >
                     <button
@@ -370,6 +512,11 @@ function DashboardPage() {
                     >
                       <p className="truncate text-xs font-medium">
                         {h.topic ?? "(untitled)"}
+                        {typeof h.version === "number" && h.version > 1 && (
+                          <span className="ml-2 rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary">
+                            v{h.version}
+                          </span>
+                        )}
                       </p>
                       <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
                         {new Date(h.created_at).toLocaleString(undefined, {
@@ -379,16 +526,46 @@ function DashboardPage() {
                           minute: "2-digit",
                         })}
                         {" · "}
-                        {h.kind}
+                        <span className={cn(
+                          h.status === "processing" && "text-primary",
+                          h.status === "queued" && "text-primary/70",
+                          h.status === "failed" && "text-destructive",
+                          h.status === "cancelled" && "text-muted-foreground",
+                        )}>
+                          {h.status}
+                        </span>
                       </p>
                     </button>
-                    <button
-                      onClick={() => deleteGenMut.mutate(h.id)}
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-label="Delete"
-                    >
-                      <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      {(h.status === "queued" || h.status === "processing") && (
+                        <button
+                          onClick={() => cancelMut.mutate(h.id)}
+                          className="rounded p-1 text-muted-foreground hover:text-destructive"
+                          aria-label="Cancel"
+                          title="Cancel"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                      {(h.status === "failed" || h.status === "cancelled") && (
+                        <button
+                          onClick={() => retryMut.mutate(h.id)}
+                          className="rounded p-1 text-muted-foreground hover:text-primary"
+                          aria-label="Retry"
+                          title="Retry"
+                        >
+                          <RotateCcw className="size-3.5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteGenMut.mutate(h.id)}
+                        aria-label="Delete"
+                        title="Delete"
+                        className="rounded p-1 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

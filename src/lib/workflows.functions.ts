@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
 // --------------- Schemas ---------------
 
@@ -62,7 +63,7 @@ const CardPayload = z.object({
   progress: z.number().int().min(0).max(100).default(0),
   tags: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
   attachments: z.array(Attachment).max(50).default([]),
-  metadata: z.record(z.string(), z.unknown()).default({}),
+  metadata: z.record(z.string(), z.unknown()).default({}) as unknown as z.ZodType<Json>,
 });
 
 const CardPatch = CardPayload.partial().extend({
@@ -210,6 +211,8 @@ export const createCard = createServerFn({ method: "POST" })
       .from("workflow_cards")
       .insert({
         ...data,
+        attachments: data.attachments as unknown as Json,
+        metadata: data.metadata as unknown as Json,
         user_id: userId,
         position: newPosition,
       })
@@ -243,9 +246,18 @@ export const updateCard = createServerFn({ method: "POST" })
       .single();
     if (readErr || !before) throw new Error(readErr?.message ?? "Not found");
 
+    const patch = {
+      ...data.patch,
+      ...(data.patch.attachments !== undefined
+        ? { attachments: data.patch.attachments as unknown as Json }
+        : {}),
+      ...(data.patch.metadata !== undefined
+        ? { metadata: data.patch.metadata as unknown as Json }
+        : {}),
+    };
     const { data: row, error } = await supabase
       .from("workflow_cards")
-      .update(data.patch)
+      .update(patch)
       .eq("id", data.id)
       .eq("user_id", userId)
       .select("*")
@@ -258,7 +270,7 @@ export const updateCard = createServerFn({ method: "POST" })
       workflow_id: string;
       card_id: string;
       event: string;
-      detail: Record<string, unknown>;
+      detail: Json;
     }[] = [];
     if (data.patch.stage && data.patch.stage !== before.stage) {
       events.push({

@@ -452,42 +452,75 @@ export type Database = {
       }
       workflow_cards: {
         Row: {
+          archived: boolean
+          assigned_user_id: string | null
+          attachments: Json
           created_at: string
+          description: string | null
+          due_date: string | null
           id: string
           linked_asset_id: string | null
           linked_generation_id: string | null
           metadata: Json
           notes: string | null
+          platform: string
           position: number
+          priority: string
+          progress: number
+          project_id: string | null
           stage: string
+          status: string
+          tags: string[]
           title: string
           updated_at: string
           user_id: string
           workflow_id: string
         }
         Insert: {
+          archived?: boolean
+          assigned_user_id?: string | null
+          attachments?: Json
           created_at?: string
+          description?: string | null
+          due_date?: string | null
           id?: string
           linked_asset_id?: string | null
           linked_generation_id?: string | null
           metadata?: Json
           notes?: string | null
+          platform?: string
           position?: number
+          priority?: string
+          progress?: number
+          project_id?: string | null
           stage?: string
+          status?: string
+          tags?: string[]
           title: string
           updated_at?: string
           user_id: string
           workflow_id: string
         }
         Update: {
+          archived?: boolean
+          assigned_user_id?: string | null
+          attachments?: Json
           created_at?: string
+          description?: string | null
+          due_date?: string | null
           id?: string
           linked_asset_id?: string | null
           linked_generation_id?: string | null
           metadata?: Json
           notes?: string | null
+          platform?: string
           position?: number
+          priority?: string
+          progress?: number
+          project_id?: string | null
           stage?: string
+          status?: string
+          tags?: string[]
           title?: string
           updated_at?: string
           user_id?: string
@@ -509,7 +542,59 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "workflow_cards_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workflow_cards_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_events: {
+        Row: {
+          card_id: string | null
+          created_at: string
+          detail: Json
+          event: string
+          id: string
+          user_id: string
+          workflow_id: string | null
+        }
+        Insert: {
+          card_id?: string | null
+          created_at?: string
+          detail?: Json
+          event: string
+          id?: string
+          user_id: string
+          workflow_id?: string | null
+        }
+        Update: {
+          card_id?: string | null
+          created_at?: string
+          detail?: Json
+          event?: string
+          id?: string
+          user_id?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_events_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_events_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "workflows"

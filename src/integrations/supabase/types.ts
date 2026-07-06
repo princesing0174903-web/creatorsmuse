@@ -196,17 +196,55 @@ export type Database = {
           },
         ]
       }
+      library_asset_collections: {
+        Row: {
+          added_at: string
+          asset_id: string
+          collection_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          asset_id: string
+          collection_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          asset_id?: string
+          collection_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_asset_collections_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_asset_collections_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "library_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_assets: {
         Row: {
           archived: boolean
           asset_type: string
           content: string | null
           created_at: string
+          deleted_at: string | null
           favorite: boolean
           generation_id: string | null
           id: string
           media_url: string | null
           metadata: Json
+          pinned: boolean
           project_id: string | null
           scores: Json
           tags: string[]
@@ -219,11 +257,13 @@ export type Database = {
           asset_type: string
           content?: string | null
           created_at?: string
+          deleted_at?: string | null
           favorite?: boolean
           generation_id?: string | null
           id?: string
           media_url?: string | null
           metadata?: Json
+          pinned?: boolean
           project_id?: string | null
           scores?: Json
           tags?: string[]
@@ -236,11 +276,13 @@ export type Database = {
           asset_type?: string
           content?: string | null
           created_at?: string
+          deleted_at?: string | null
           favorite?: boolean
           generation_id?: string | null
           id?: string
           media_url?: string | null
           metadata?: Json
+          pinned?: boolean
           project_id?: string | null
           scores?: Json
           tags?: string[]
@@ -264,6 +306,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      library_collections: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          metadata: Json
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          metadata?: Json
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

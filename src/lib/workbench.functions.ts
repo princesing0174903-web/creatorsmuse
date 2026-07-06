@@ -70,8 +70,10 @@ const ListAssetsInput = z.object({
   search: z.string().trim().max(200).default(""),
   types: z.array(AssetType).default([]),
   projectId: z.string().uuid().nullish(),
+  collectionId: z.string().uuid().nullish(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
   favoritesOnly: z.boolean().default(false),
-  archived: z.enum(["active", "archived", "all"]).default("active"),
+  archived: z.enum(["active", "archived", "trash", "all"]).default("active"),
   sort: z.enum(["created_desc", "created_asc", "updated_desc"]).default("created_desc"),
   limit: z.number().int().min(1).max(200).default(60),
   offset: z.number().int().min(0).default(0),
@@ -87,12 +89,30 @@ export const listMyAssets = createServerFn({ method: "POST" })
       .select("*", { count: "exact" })
       .eq("user_id", userId);
 
-    if (data.archived === "active") q = q.eq("archived", false);
-    else if (data.archived === "archived") q = q.eq("archived", true);
+    if (data.archived === "active") {
+      q = q.eq("archived", false).is("deleted_at", null);
+    } else if (data.archived === "archived") {
+      q = q.eq("archived", true).is("deleted_at", null);
+    } else if (data.archived === "trash") {
+      q = q.not("deleted_at", "is", null);
+    }
 
     if (data.favoritesOnly) q = q.eq("favorite", true);
     if (data.types.length) q = q.in("asset_type", data.types);
     if (data.projectId) q = q.eq("project_id", data.projectId);
+    if (data.tags.length) q = q.contains("tags", data.tags);
+
+    if (data.collectionId) {
+      const { data: linkRows, error: linkErr } = await supabase
+        .from("library_asset_collections")
+        .select("asset_id")
+        .eq("collection_id", data.collectionId)
+        .eq("user_id", userId);
+      if (linkErr) throw new Error(linkErr.message);
+      const ids = (linkRows ?? []).map((r) => r.asset_id);
+      if (!ids.length) return { rows: [], total: 0 };
+      q = q.in("id", ids);
+    }
 
     const s = data.search.trim();
     if (s) {
@@ -106,7 +126,10 @@ export const listMyAssets = createServerFn({ method: "POST" })
       updated_desc: { col: "updated_at", asc: false },
     } as const;
     const { col, asc } = sortMap[data.sort];
-    q = q.order(col, { ascending: asc }).range(data.offset, data.offset + data.limit - 1);
+    q = q
+      .order("pinned", { ascending: false })
+      .order(col, { ascending: asc })
+      .range(data.offset, data.offset + data.limit - 1);
 
     const { data: rows, error, count } = await q;
     if (error) throw new Error(error.message);
@@ -116,6 +139,7 @@ export const listMyAssets = createServerFn({ method: "POST" })
 const AssetPatch = z.object({
   favorite: z.boolean().optional(),
   archived: z.boolean().optional(),
+  pinned: z.boolean().optional(),
   title: z.string().max(200).nullish(),
   content: z.string().max(10000).nullish(),
   tags: z.array(z.string().trim().min(1).max(40)).max(30).optional(),

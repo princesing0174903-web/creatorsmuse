@@ -1,14 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function SiteFooter() {
   return (
     <footer className="relative z-10 border-t border-border bg-background/60">
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-10 px-6 py-12 md:grid-cols-4">
         <div className="col-span-2 md:col-span-1">
-          <div className="flex items-center gap-2">
-            <div className="size-6 rounded-md bg-primary shadow-glow" />
-            <span className="text-base font-bold uppercase tracking-tighter">Creator's Muse</span>
-          </div>
+          <BrandLogo variant="mark" imgClassName="size-7" showWordmark />
           <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
             The AI operating system built for creators who ship faster than the algorithm changes.
           </p>
@@ -80,8 +78,7 @@ export function LegalPageShell({
       <div className="pointer-events-none absolute inset-0 bg-gradient-radial" />
       <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
         <Link to="/" className="flex items-center gap-3">
-          <div className="size-7 rounded-md bg-primary shadow-glow" />
-          <span className="text-lg font-bold uppercase tracking-tighter">Creator's Muse</span>
+          <BrandLogo variant="mark" imgClassName="size-8" showWordmark />
         </Link>
         <Link
           to="/login"

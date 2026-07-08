@@ -16,6 +16,7 @@ import { AuthScreen } from "@/components/auth-screen";
 import { useAuth, signOut } from "@/lib/auth";
 import { usePlan } from "@/lib/plan";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand-logo";
 
 const NAV = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" as const },

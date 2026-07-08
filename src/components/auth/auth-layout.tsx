@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function AuthLayout({
   children,
@@ -38,8 +39,7 @@ export function AuthLayout({
         to="/"
         className="absolute left-4 top-4 z-10 flex items-center gap-3 text-sm text-muted-foreground transition-colors hover:text-foreground sm:left-6 sm:top-6"
       >
-        <div className="size-6 rounded bg-primary shadow-glow" />
-        <span className="font-bold uppercase tracking-tighter">Creator&apos;s Muse</span>
+        <BrandLogo variant="mark" imgClassName="size-7" showWordmark />
       </Link>
 
       <div

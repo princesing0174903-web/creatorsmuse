@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { requireAuthBeforeLoad } from "@/lib/route-auth";
 import { useState } from "react";
-import { User, LogOut, Palette, CreditCard, Sparkles, Check, Bell, Mail } from "lucide-react";
+import { User, LogOut, Palette, CreditCard, Sparkles, Check, Bell, Mail, Brain } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { BrandBrainPanel } from "@/components/brand-brain";
 import { useAuth, signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

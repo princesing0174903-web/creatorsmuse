@@ -117,6 +117,15 @@ function SettingsPage() {
           </div>
         </Section>
 
+        {/* Brand Brain */}
+        <Section icon={Brain} label="Brand Brain — Creator Intelligence">
+          <p className="mb-4 text-xs text-muted-foreground">
+            Long-term memory for your voice. Every generation is orchestrated with this identity,
+            your uploaded knowledge, and what you keep, edit, or delete.
+          </p>
+          <BrandBrainPanel />
+        </Section>
+
         {/* Subscription */}
         <Section icon={CreditCard} label="Subscription">
           <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card/40 to-card/10 p-5">

@@ -153,6 +153,13 @@ export const updateAsset = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => UpdateAssetInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Capture the pre-edit text so the learning engine can diff it.
+    const { data: before } = await supabase
+      .from("library_assets")
+      .select("content, asset_type")
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
     const { data: row, error } = await supabase
       .from("library_assets")
       .update(data.patch)
@@ -161,6 +168,33 @@ export const updateAsset = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+
+    // --- Learning signals (best-effort; never blocks the write). ---
+    const signals: Array<{ signal: string; original?: string; final?: string }> = [];
+    if (
+      typeof data.patch.content === "string" &&
+      before?.content &&
+      data.patch.content !== before.content
+    ) {
+      signals.push({ signal: "edit", original: before.content, final: data.patch.content });
+    }
+    if (data.patch.favorite === true) signals.push({ signal: "favorite", final: row.content ?? "" });
+    if (data.patch.pinned === true) signals.push({ signal: "pin", final: row.content ?? "" });
+    if (data.patch.archived === true) signals.push({ signal: "archive", final: row.content ?? "" });
+    if (signals.length) {
+      const { error: sErr } = await supabase.from("brand_learning_signals").insert(
+        signals.map((s) => ({
+          user_id: userId,
+          asset_id: data.id,
+          generation_id: row.generation_id,
+          signal: s.signal,
+          asset_type: (before?.asset_type as string | null) ?? row.asset_type,
+          original_text: s.original?.slice(0, 4000) ?? null,
+          final_text: s.final?.slice(0, 4000) ?? null,
+        })),
+      );
+      if (sErr) console.error("Learning signal failed (non-fatal):", sErr.message);
+    }
     return row;
   });
 
@@ -169,12 +203,26 @@ export const deleteAsset = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => IdInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { data: before } = await supabase
+      .from("library_assets")
+      .select("content, asset_type")
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
     const { error } = await supabase
       .from("library_assets")
       .delete()
       .eq("id", data.id)
       .eq("user_id", userId);
     if (error) throw new Error(error.message);
+    if (before?.content) {
+      await supabase.from("brand_learning_signals").insert({
+        user_id: userId,
+        signal: "delete",
+        asset_type: before.asset_type,
+        original_text: before.content.slice(0, 4000),
+      });
+    }
     return { ok: true };
   });
 

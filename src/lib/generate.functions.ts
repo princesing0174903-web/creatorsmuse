@@ -83,6 +83,22 @@ export const generateAssets = createServerFn({ method: "POST" })
     // Server-side quota enforcement — prevents client-side bypass.
     await consumeCredit(context.userId, 1);
 
+    // Brand Brain: layer brand identity, learned behaviour and knowledge base
+    // on top of the base craft prompt.
+    let systemPrompt = SYSTEM_PROMPT;
+    try {
+      const { orchestratePrompt } = await import("./brand.server");
+      const orchestrated = await orchestratePrompt({
+        userId: context.userId,
+        basePrompt: SYSTEM_PROMPT,
+        topic: data.topic,
+        projectId: data.projectId ?? null,
+      });
+      systemPrompt = orchestrated.systemPrompt;
+    } catch (e) {
+      console.error("Brand orchestration failed (non-fatal):", e);
+    }
+
     const userPrompt = `Topic / context:\n${data.topic}${
       data.fileName ? `\n\nUploaded video filename (for tone hints only): ${data.fileName}` : ""
     }\n\nReturn 5 hooks, 5 captions, 5 posts, 5 shorts angles. All distinct, niche-specific.`;
@@ -96,7 +112,7 @@ export const generateAssets = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: MODEL_ID,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
         tools: [
@@ -248,7 +264,13 @@ export { OutputSchema as GenerateOutputSchema };
  * Supports abort via signal for cooperative cancellation.
  */
 export async function callGenerateModel(
-  args: { topic: string; fileName?: string | null; signal?: AbortSignal },
+  args: {
+    topic: string;
+    fileName?: string | null;
+    signal?: AbortSignal;
+    /** Orchestrated Brand Brain prompt; falls back to the base craft prompt. */
+    systemPrompt?: string;
+  },
 ): Promise<GeneratedAssets> {
   const apiKey = process.env.LOVABLE_API_KEY;
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
@@ -286,7 +308,7 @@ export async function callGenerateModel(
     body: JSON.stringify({
       model: MODEL_ID,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: args.systemPrompt ?? SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
       ],
       tools: [

@@ -146,7 +146,37 @@ async function runGenerationJob(jobId: string): Promise<void> {
       return;
     }
 
-    const assets = await callGenerateModel({ topic, fileName, signal: abort.signal });
+    // --- Brand Brain: orchestrate the final system prompt. ---
+    const { orchestratePrompt, evaluateQuality } = await import("./brand.server");
+    const { GENERATE_SYSTEM_PROMPT } = await import("./generate.functions");
+    let systemPrompt: string | undefined;
+    let brandId: string | null = null;
+    try {
+      const orchestrated = await orchestratePrompt({
+        userId: job.user_id,
+        basePrompt: GENERATE_SYSTEM_PROMPT,
+        topic,
+        projectId: job.project_id,
+      });
+      systemPrompt = orchestrated.systemPrompt;
+      brandId = orchestrated.brandId;
+      if (brandId) {
+        await supabaseAdmin.from("generation_events").insert({
+          generation_id: jobId,
+          user_id: job.user_id,
+          event: "brand_context",
+          detail: {
+            brand_id: brandId,
+            knowledge_chunks: orchestrated.usedKnowledge,
+            learning_signals: orchestrated.usedSignals,
+          } as Json,
+        });
+      }
+    } catch (brandErr) {
+      console.error("Brand orchestration failed (non-fatal):", brandErr);
+    }
+
+    const assets = await callGenerateModel({ topic, fileName, signal: abort.signal, systemPrompt });
 
     if (cancelled) {
       clearInterval(poll);
@@ -193,6 +223,14 @@ async function runGenerationJob(jobId: string): Promise<void> {
 
     clearInterval(poll);
     await finalize(jobId, job.user_id, "complete", { detail: { items: rows.length } as Json });
+
+    // --- AI Quality Loop (non-blocking, non-fatal). ---
+    void evaluateQuality({
+      userId: job.user_id,
+      generationId: jobId,
+      brandId,
+      samples: rows.slice(0, 12).map((r) => r.content),
+    }).catch((e) => console.error("Quality loop failed:", e));
   } catch (err) {
     clearInterval(poll);
     if (cancelled || (err instanceof Error && err.name === "AbortError")) {

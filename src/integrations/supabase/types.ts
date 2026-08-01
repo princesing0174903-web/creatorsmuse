@@ -14,6 +14,329 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_knowledge_chunks: {
+        Row: {
+          brand_id: string | null
+          chunk_index: number
+          content: string
+          created_at: string
+          doc_id: string
+          embedding: string | null
+          id: string
+          metadata: Json
+          token_estimate: number
+          user_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          chunk_index?: number
+          content: string
+          created_at?: string
+          doc_id: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          token_estimate?: number
+          user_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          doc_id?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          token_estimate?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_knowledge_chunks_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_knowledge_chunks_doc_id_fkey"
+            columns: ["doc_id"]
+            isOneToOne: false
+            referencedRelation: "brand_knowledge_docs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_knowledge_docs: {
+        Row: {
+          brand_id: string | null
+          byte_size: number | null
+          chunk_count: number
+          created_at: string
+          error: string | null
+          id: string
+          metadata: Json
+          mime_type: string | null
+          source_type: string
+          source_url: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          byte_size?: number | null
+          chunk_count?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          byte_size?: number | null
+          chunk_count?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_knowledge_docs_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_learning_signals: {
+        Row: {
+          asset_id: string | null
+          asset_type: string | null
+          brand_id: string | null
+          created_at: string
+          detail: Json
+          final_text: string | null
+          generation_id: string | null
+          id: string
+          original_text: string | null
+          signal: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_type?: string | null
+          brand_id?: string | null
+          created_at?: string
+          detail?: Json
+          final_text?: string | null
+          generation_id?: string | null
+          id?: string
+          original_text?: string | null
+          signal: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          asset_id?: string | null
+          asset_type?: string | null
+          brand_id?: string | null
+          created_at?: string
+          detail?: Json
+          final_text?: string | null
+          generation_id?: string | null
+          id?: string
+          original_text?: string | null
+          signal?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_learning_signals_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_learning_signals_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_learning_signals_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_memory_versions: {
+        Row: {
+          brand_id: string
+          change_source: string
+          changed_fields: string[]
+          created_at: string
+          id: string
+          note: string | null
+          snapshot: Json
+          user_id: string
+          version: number
+        }
+        Insert: {
+          brand_id: string
+          change_source?: string
+          changed_fields?: string[]
+          created_at?: string
+          id?: string
+          note?: string | null
+          snapshot?: Json
+          user_id: string
+          version: number
+        }
+        Update: {
+          brand_id?: string
+          change_source?: string
+          changed_fields?: string[]
+          created_at?: string
+          id?: string
+          note?: string | null
+          snapshot?: Json
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_memory_versions_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_profiles: {
+        Row: {
+          accent_color: string | null
+          approved_phrases: string[]
+          banned_words: string[]
+          competitors: string[]
+          content_pillars: string[]
+          created_at: string
+          cta_style: string | null
+          emoji_rules: string
+          formatting_preferences: string | null
+          hashtags: string[]
+          id: string
+          is_default: boolean
+          keywords: string[]
+          learned_insights: Json
+          links: Json
+          logo_url: string | null
+          memory_version: number
+          metadata: Json
+          mission: string | null
+          name: string
+          platform_rules: Json
+          primary_color: string | null
+          reading_level: string | null
+          target_audience: string | null
+          tone: string | null
+          updated_at: string
+          user_id: string
+          vision: string | null
+          vocabulary: string[]
+          writing_style: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          approved_phrases?: string[]
+          banned_words?: string[]
+          competitors?: string[]
+          content_pillars?: string[]
+          created_at?: string
+          cta_style?: string | null
+          emoji_rules?: string
+          formatting_preferences?: string | null
+          hashtags?: string[]
+          id?: string
+          is_default?: boolean
+          keywords?: string[]
+          learned_insights?: Json
+          links?: Json
+          logo_url?: string | null
+          memory_version?: number
+          metadata?: Json
+          mission?: string | null
+          name: string
+          platform_rules?: Json
+          primary_color?: string | null
+          reading_level?: string | null
+          target_audience?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id: string
+          vision?: string | null
+          vocabulary?: string[]
+          writing_style?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          approved_phrases?: string[]
+          banned_words?: string[]
+          competitors?: string[]
+          content_pillars?: string[]
+          created_at?: string
+          cta_style?: string | null
+          emoji_rules?: string
+          formatting_preferences?: string | null
+          hashtags?: string[]
+          id?: string
+          is_default?: boolean
+          keywords?: string[]
+          learned_insights?: Json
+          links?: Json
+          logo_url?: string | null
+          memory_version?: number
+          metadata?: Json
+          mission?: string | null
+          name?: string
+          platform_rules?: Json
+          primary_color?: string | null
+          reading_level?: string | null
+          target_audience?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id?: string
+          vision?: string | null
+          vocabulary?: string[]
+          writing_style?: string | null
+        }
+        Relationships: []
+      }
       brand_settings: {
         Row: {
           accent_color: string | null
@@ -93,6 +416,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "generation_events_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generation_quality: {
+        Row: {
+          brand_consistency: number
+          brand_id: string | null
+          created_at: string
+          cta_quality: number
+          detail: Json
+          generation_id: string
+          grammar: number
+          id: string
+          notes: string | null
+          overall: number
+          platform_optimization: number
+          readability: number
+          tone_match: number
+          user_id: string
+        }
+        Insert: {
+          brand_consistency?: number
+          brand_id?: string | null
+          created_at?: string
+          cta_quality?: number
+          detail?: Json
+          generation_id: string
+          grammar?: number
+          id?: string
+          notes?: string | null
+          overall?: number
+          platform_optimization?: number
+          readability?: number
+          tone_match?: number
+          user_id: string
+        }
+        Update: {
+          brand_consistency?: number
+          brand_id?: string | null
+          created_at?: string
+          cta_quality?: number
+          detail?: Json
+          generation_id?: string
+          grammar?: number
+          id?: string
+          notes?: string | null
+          overall?: number
+          platform_optimization?: number
+          readability?: number
+          tone_match?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_quality_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generation_quality_generation_id_fkey"
             columns: ["generation_id"]
             isOneToOne: false
             referencedRelation: "generations"
@@ -376,6 +765,7 @@ export type Database = {
       projects: {
         Row: {
           archived: boolean
+          brand_id: string | null
           category: string | null
           color: string
           created_at: string
@@ -398,6 +788,7 @@ export type Database = {
         }
         Insert: {
           archived?: boolean
+          brand_id?: string | null
           category?: string | null
           color?: string
           created_at?: string
@@ -420,6 +811,7 @@ export type Database = {
         }
         Update: {
           archived?: boolean
+          brand_id?: string | null
           category?: string | null
           color?: string
           created_at?: string
@@ -440,7 +832,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usage_counters: {
         Row: {
@@ -740,6 +1140,20 @@ export type Database = {
           p_user_id: string
         }
         Returns: number
+      }
+      match_brand_knowledge: {
+        Args: {
+          match_count?: number
+          p_brand_id: string
+          p_user_id: string
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          doc_id: string
+          id: string
+          similarity: number
+        }[]
       }
     }
     Enums: {
